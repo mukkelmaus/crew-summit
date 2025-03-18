@@ -1,9 +1,8 @@
 
-# CrewAI Hub
+# CrewSUMMIT
 
 A modern web application for creating, managing, and monitoring AI agent crews.
-
-![CrewAI Hub](public/og-image.png)
+CrewAI System for Unified Management, Monitoring, Integration & Tasks
 
 ## Features
 
