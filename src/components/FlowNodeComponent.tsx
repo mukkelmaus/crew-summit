@@ -8,7 +8,10 @@ import {
   Repeat, 
   CircleDot, 
   Code2, 
-  Zap 
+  Zap,
+  User,
+  UserCheck,
+  Database
 } from 'lucide-react';
 
 interface FlowNodeProps {
@@ -19,6 +22,9 @@ interface FlowNodeProps {
     iterations?: number;
     taskIds?: string[];
     agentId?: string;
+    requiresApproval?: boolean;
+    approver?: string;
+    dataSource?: string;
   };
   type: FlowNodeType;
   isConnectable: boolean;
@@ -39,6 +45,10 @@ const FlowNodeComponent = ({ id, data, type, isConnectable }: FlowNodeProps) => 
         return <List className="h-4 w-4 mr-2" />;
       case 'event':
         return <Zap className="h-4 w-4 mr-2" />;
+      case 'human_approval':
+        return <UserCheck className="h-4 w-4 mr-2" />;
+      case 'data_operation':
+        return <Database className="h-4 w-4 mr-2" />;
       default:
         return <CircleDot className="h-4 w-4 mr-2" />;
     }
@@ -58,6 +68,10 @@ const FlowNodeComponent = ({ id, data, type, isConnectable }: FlowNodeProps) => 
         return 'bg-cyan-50 border-cyan-200 dark:bg-cyan-900/20 dark:border-cyan-700';
       case 'event':
         return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-700';
+      case 'human_approval':
+        return 'bg-pink-50 border-pink-200 dark:bg-pink-900/20 dark:border-pink-700';
+      case 'data_operation':
+        return 'bg-teal-50 border-teal-200 dark:bg-teal-900/20 dark:border-teal-700';
       default:
         return 'bg-gray-50 border-gray-200 dark:bg-gray-900/20 dark:border-gray-700';
     }
@@ -73,7 +87,7 @@ const FlowNodeComponent = ({ id, data, type, isConnectable }: FlowNodeProps) => 
       />
       <div className="font-medium flex items-center">
         {getNodeIcon()}
-        <span className="capitalize">{type}</span>
+        <span className="capitalize">{type.replace('_', ' ')}</span>
       </div>
       
       {data.description && (
@@ -89,6 +103,19 @@ const FlowNodeComponent = ({ id, data, type, isConnectable }: FlowNodeProps) => 
       {data.iterations !== undefined && type === 'loop' && (
         <div className="text-xs mt-2">
           Iterations: {data.iterations}
+        </div>
+      )}
+
+      {data.requiresApproval && type === 'human_approval' && (
+        <div className="text-xs mt-2 flex items-center">
+          <User className="h-3 w-3 mr-1" />
+          Approver: {data.approver || 'Any user'}
+        </div>
+      )}
+
+      {data.dataSource && type === 'data_operation' && (
+        <div className="text-xs mt-2">
+          Data source: {data.dataSource}
         </div>
       )}
       
@@ -110,6 +137,25 @@ const FlowNodeComponent = ({ id, data, type, isConnectable }: FlowNodeProps) => 
           />
           <Handle 
             id="false" 
+            type="source" 
+            position={Position.Left} 
+            isConnectable={isConnectable}
+            className="w-2 h-2 !bg-red-500"
+          />
+        </>
+      )}
+
+      {type === 'human_approval' && (
+        <>
+          <Handle 
+            id="approved" 
+            type="source" 
+            position={Position.Right} 
+            isConnectable={isConnectable}
+            className="w-2 h-2 !bg-green-500"
+          />
+          <Handle 
+            id="rejected" 
             type="source" 
             position={Position.Left} 
             isConnectable={isConnectable}
