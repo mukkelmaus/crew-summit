@@ -6,7 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Crew } from "@/lib/types";
 import { format } from "date-fns";
 import AgentCard from "./AgentCard";
-import { Check, Clock, AlertCircle, Play, MoreVertical } from "lucide-react";
+import { Check, Clock, AlertCircle, Play, MoreVertical, Workflow } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -19,6 +19,8 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import TaskList from "./TaskList";
 import { useToast } from "@/hooks/use-toast";
+import FlowList from "./FlowList";
+import { mockFlows } from "@/lib/data";
 
 interface CrewCardProps {
   crew: Crew;
@@ -27,6 +29,7 @@ interface CrewCardProps {
 export default function CrewCard({ crew }: CrewCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [tasksVisible, setTasksVisible] = useState(false);
+  const [flowsVisible, setFlowsVisible] = useState(false);
   const { toast } = useToast();
   
   const agentMap = crew.agents.reduce((acc, agent) => {
@@ -71,6 +74,16 @@ export default function CrewCard({ crew }: CrewCardProps) {
     });
   };
 
+  const runFlow = (flow: any) => {
+    toast({
+      title: "Flow execution started",
+      description: `Flow "${flow.name}" is now running...`,
+    });
+  };
+
+  // Filter flows for this crew
+  const crewFlows = mockFlows.filter(flow => flow.crewId === crew.id);
+
   return (
     <>
       <Card className="overflow-hidden transition-all duration-300 hover:shadow-md card-hover">
@@ -101,6 +114,9 @@ export default function CrewCard({ crew }: CrewCardProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setTasksVisible(true)}>
                   View Tasks
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFlowsVisible(true)}>
+                  View Flows
                 </DropdownMenuItem>
                 <DropdownMenuItem>Edit Crew</DropdownMenuItem>
                 <DropdownMenuItem>Duplicate</DropdownMenuItem>
@@ -142,9 +158,20 @@ export default function CrewCard({ crew }: CrewCardProps) {
           </div>
           
           <div className="mt-4">
-            <div className="flex justify-between text-sm">
-              <span>Tasks: {crew.tasks.length}</span>
+            <div className="flex justify-between items-center">
+              <div className="flex justify-between text-sm">
+                <span>Tasks: {crew.tasks.length}</span>
+              </div>
               <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setTasksVisible(true)}>
+                View all
+              </Button>
+            </div>
+            
+            <div className="flex justify-between items-center mt-2">
+              <div className="flex justify-between text-sm">
+                <span>Flows: {crewFlows.length}</span>
+              </div>
+              <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setFlowsVisible(true)}>
                 View all
               </Button>
             </div>
@@ -166,15 +193,26 @@ export default function CrewCard({ crew }: CrewCardProps) {
           <div className="text-xs text-muted-foreground">
             Created {format(new Date(crew.createdAt), "MMM d, yyyy")}
           </div>
-          <Button 
-            size="sm" 
-            className="gap-1" 
-            onClick={runCrew}
-            disabled={crew.status === 'running'}
-          >
-            <Play className="h-4 w-4" />
-            Run Crew
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              size="sm" 
+              className="gap-1" 
+              onClick={runCrew}
+              disabled={crew.status === 'running'}
+            >
+              <Play className="h-4 w-4" />
+              Run Crew
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="gap-1" 
+              onClick={() => setFlowsVisible(true)}
+            >
+              <Workflow className="h-4 w-4" />
+              Flows
+            </Button>
+          </div>
         </CardFooter>
       </Card>
       
@@ -188,6 +226,20 @@ export default function CrewCard({ crew }: CrewCardProps) {
           </DialogHeader>
           <div className="mt-4">
             <TaskList tasks={crew.tasks} agentMap={agentMap} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={flowsVisible} onOpenChange={setFlowsVisible}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Workflows for {crew.name}</DialogTitle>
+            <DialogDescription>
+              Manage automated workflows for this crew
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <FlowList flows={crewFlows} crewId={crew.id} onRunFlow={runFlow} />
           </div>
         </DialogContent>
       </Dialog>

@@ -43,3 +43,45 @@ export interface Crew {
     taskExecutionStrategy: 'sequential' | 'parallel';
   };
 }
+
+// Flow types for workflow automation
+export type FlowNodeType = 'task' | 'condition' | 'loop' | 'parallel' | 'sequence' | 'event';
+
+export interface FlowNode {
+  id: string;
+  type: FlowNodeType;
+  label: string;
+  data: {
+    description?: string;
+    condition?: string;
+    iterations?: number;
+    taskIds?: string[];
+    agentId?: string;
+  };
+  position: {
+    x: number;
+    y: number;
+  };
+}
+
+export interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  animated?: boolean;
+  type?: 'default' | 'conditional' | 'success' | 'failure';
+}
+
+export interface Flow {
+  id: string;
+  name: string;
+  description: string;
+  crewId: string;
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  createdAt: string;
+  updatedAt?: string;
+  lastRun?: string;
+  status: 'idle' | 'running' | 'completed' | 'error';
+}
