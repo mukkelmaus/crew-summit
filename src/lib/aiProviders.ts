@@ -43,7 +43,7 @@ export async function callAIProvider(
   try {
     let endpoint = '';
     let body = {};
-    let headers = {
+    let headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 

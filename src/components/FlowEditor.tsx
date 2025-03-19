@@ -140,7 +140,7 @@ export default function FlowEditor({
       toast({
         title: "Human approval required",
         description: "This flow has pending approval steps that must be resolved before running.",
-        variant: "warning",
+        variant: "destructive", // Changed from "warning" to "destructive" to match allowed variants
       });
       return;
     }
@@ -206,13 +206,13 @@ export default function FlowEditor({
     setPendingApprovals(prev => prev.filter(id => id !== nodeId));
     
     // Update the flow's humanInterventionPoints
-    const updatedFlow = {
+    const updatedFlow: Flow = {
       ...flow,
       humanInterventionPoints: flow.humanInterventionPoints?.map(point => 
         point.nodeId === nodeId 
-          ? { ...point, status: 'completed' } 
+          ? { ...point, status: 'completed' as const } 
           : point
-      )
+      ) || []
     };
     
     if (onSave) {
