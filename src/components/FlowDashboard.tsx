@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Flow, FlowNodeType } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import FlowList from "./FlowList";
 import FlowHistory from "./FlowHistory";
 import { getFlows } from "@/lib/localDatabase";
-import { Activity, Clock, Filter, PlayCircle, PlusCircle, Search, Timeline } from "lucide-react";
+import { Activity, Clock, Filter, PlayCircle, PlusCircle, Search, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function FlowDashboard() {
@@ -22,7 +21,7 @@ export default function FlowDashboard() {
   const { toast } = useToast();
 
   // Load flows from local database on component mount
-  useState(() => {
+  useEffect(() => {
     async function loadFlows() {
       try {
         const loadedFlows = await getFlows();
@@ -82,7 +81,7 @@ export default function FlowDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Flows</CardTitle>
-            <Timeline className="h-4 w-4 text-muted-foreground" />
+            <List className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{flows.length}</div>
