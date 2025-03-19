@@ -13,8 +13,14 @@ import {
 
 interface FlowNodeProps {
   id: string;
-  data: FlowNodeType['data'];
-  type: FlowNodeType['type'];
+  data: {
+    description?: string;
+    condition?: string;
+    iterations?: number;
+    taskIds?: string[];
+    agentId?: string;
+  };
+  type: FlowNodeType;
   isConnectable: boolean;
 }
 
