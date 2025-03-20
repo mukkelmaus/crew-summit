@@ -1,23 +1,32 @@
 
 # CrewSUMMIT
 
-A modern web application for creating, managing, and monitoring AI agent crews.
-CrewAI System for Unified Management, Monitoring, Integration & Tasks
+A comprehensive system for unified management, monitoring, integration & tasks for AI agent crews.
+
+![CrewSUMMIT Dashboard](public/placeholder.svg)
+
+## Overview
+
+CrewSUMMIT is a modern web application designed for creating, managing, and monitoring AI agent crews. It provides a robust platform for AI orchestration, enabling users to define agents with specific roles, assemble them into collaborative crews, assign tasks, and monitor their real-time execution.
 
 ## Features
 
-- **Agent Management**: Create and configure AI agents with different roles and capabilities
+- **Agent Management**: Create and configure AI agents with customizable roles and capabilities
 - **Crew Creation**: Assemble agents into crews for collaborative task execution
-- **Task Assignment**: Assign specific tasks to agents and monitor their progress
-- **Real-time Monitoring**: Track crew performance and agent status
-- **Dark/Light Mode**: Support for different visual themes
-- **Responsive Design**: Works on desktop and mobile devices
+- **Task Assignment**: Define and assign specific tasks to agents with detailed descriptions
+- **Real-time Monitoring**: Track crew performance and agent status through an intuitive dashboard
+- **Flow Visualization**: Design and visualize agent interaction flows with an interactive editor
+- **Dark/Light Mode**: User-friendly interface with theme support
+- **Responsive Design**: Seamless experience across desktop and mobile devices
+- **Robust Error Handling**: Comprehensive error capturing and reporting system
 
 ## Tech Stack
 
-- **Frontend**: React, TypeScript
-- **Styling**: Tailwind CSS, Shadcn UI
-- **State Management**: React hooks and context
+- **Frontend**: React 18, TypeScript
+- **Styling**: Tailwind CSS, Shadcn UI components
+- **State Management**: React Query, Context API
+- **Visualization**: XY Flow for flow diagrams
+- **Testing**: Vitest, React Testing Library
 - **Build Tool**: Vite
 
 ## Getting Started
@@ -31,8 +40,8 @@ CrewAI System for Unified Management, Monitoring, Integration & Tasks
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/yourusername/crewai-hub.git
-   cd crewai-hub
+   git clone https://github.com/yourusername/crewsummit.git
+   cd crewsummit
    ```
 
 2. Install dependencies
@@ -55,7 +64,7 @@ Create a `.env` file in the project root with the following variables:
 
 ```
 # App Configuration
-VITE_APP_NAME=CrewAI Hub
+VITE_APP_NAME=CrewSUMMIT
 VITE_APP_URL=http://localhost:5173
 
 # LLM API Configurations
@@ -72,60 +81,59 @@ VITE_STORAGE_TYPE=local
 
 1. Navigate to the Agents section
 2. Click "New Agent"
-3. Fill in the required details:
-   - Name
+3. Configure the agent with:
+   - Name and description
    - Role (researcher, writer, analyst, etc.)
-   - Description
-   - LLM model
-   - Tools
+   - LLM model selection
+   - Available tools and capabilities
 
 ### Creating a Crew
 
 1. Navigate to the Crews section
 2. Click "New Crew"
-3. Fill in the crew details
+3. Define crew details and purpose
 4. Add agents to your crew
-5. Configure task execution strategy
+5. Configure execution strategy and parameters
 
-### Managing Tasks
+### Managing Flows
 
-1. Select a crew
-2. Add tasks with descriptions
-3. Assign tasks to specific agents
-4. Monitor task status and outputs
+1. Access the Flow Editor
+2. Create nodes representing agents or processes
+3. Connect nodes to establish workflows
+4. Configure event triggers and conditions
+5. Test and monitor flow execution
 
-## Deployment
+## Testing
 
-### Building for Production
+Run the test suite to ensure everything is working correctly:
 
 ```bash
-npm run build
+npm test
 ```
 
-This creates optimized production files in the `dist` directory.
+For development with continuous test running:
 
-### Deployment Options
-
-#### Static Hosting Services
-
-Deploy to services like Netlify, Vercel, or GitHub Pages.
-
-Example for Netlify:
 ```bash
-# Install Netlify CLI
-npm install -g netlify-cli
-
-# Deploy
-netlify deploy --prod
+npm run test:watch
 ```
 
-#### Docker Deployment
+Generate test coverage reports:
 
-Create a `Dockerfile` and deploy as a containerized application.
+```bash
+npm run test:coverage
+```
 
-#### Self-hosted Server
+## Documentation
 
-Configure a web server like Nginx to serve the static files.
+For comprehensive documentation, please refer to the `/docs` directory:
+
+- [Getting Started](./src/docs/getting-started.md)
+- [User Guide](./src/docs/user-guide.md)
+- [Developer Guide](./src/docs/developer-guide.md)
+- [API Reference](./src/docs/api-reference.md)
+- [Architecture Overview](./src/docs/architecture.md)
+- [Testing Guide](./src/docs/testing-guide.md)
+- [Troubleshooting](./src/docs/troubleshooting.md)
 
 ## License
 
@@ -141,6 +149,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## Contact
+## Acknowledgements
 
-For questions or support, please open an issue on the GitHub repository.
+- [CrewAI](https://github.com/joaomdmoura/crewAI) - Framework for orchestrating role-playing autonomous AI agents
+- [React](https://reactjs.org/) - JavaScript library for building user interfaces
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
+- [Shadcn UI](https://ui.shadcn.com/) - UI component library
+- [XY Flow](https://reactflow.dev/) - Library for building node-based editors and interactive diagrams

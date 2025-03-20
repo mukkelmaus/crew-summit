@@ -1,45 +1,87 @@
 
-# CrewAI Hub API Implementation Guide
+# CrewSUMMIT API Implementation Guide
 
-This guide provides instructions for building a backend API service that connects the CrewAI Hub frontend with your CrewAI framework implementation.
+This document provides instructions for implementing a backend API service that integrates the CrewSUMMIT frontend with a CrewAI framework implementation.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [API Architecture](#api-architecture)
+- [Project Structure](#project-structure)
+- [Setup Instructions](#setup-instructions)
+- [Core Data Models](#core-data-models)
+- [API Endpoints](#api-endpoints)
+- [Integration with CrewAI](#integration-with-crewai)
+- [Error Handling](#error-handling)
+- [Authentication](#authentication)
+- [Deployment](#deployment)
+- [Advanced Features](#advanced-features)
+- [Troubleshooting](#troubleshooting)
 
 ## Overview
 
-The backend API will serve as a bridge between the CrewAI Hub frontend and your CrewAI Python framework. It will:
+The CrewSUMMIT API serves as a bridge between the CrewSUMMIT frontend and a CrewAI Python framework implementation. It provides:
 
-1. Expose REST endpoints for managing agents, crews, and tasks
-2. Handle the conversion between frontend data models and CrewAI objects
-3. Manage state persistence for your CrewAI instances
+1. RESTful endpoints for managing agents, crews, flows, and tasks
+2. Data conversion between frontend models and CrewAI objects
+3. State persistence and synchronization
+4. Real-time updates for monitoring crew operations
+
+## API Architecture
+
+![API Architecture](public/placeholder.svg)
+
+The API follows a clean architecture with:
+
+- **Controller Layer**: Handles HTTP requests and responses
+- **Service Layer**: Contains business logic and CrewAI integration
+- **Repository Layer**: Manages data persistence
+- **Model Layer**: Defines data structures
 
 ## Technology Stack
 
-- **FastAPI**: Modern, high-performance web framework for building APIs
-- **Uvicorn**: ASGI server for running the FastAPI application
+- **FastAPI**: Modern, high-performance web framework
 - **Pydantic**: Data validation and settings management
-- **CrewAI**: Your existing CrewAI implementation
+- **SQLAlchemy** (optional): ORM for database interactions
+- **WebSockets**: For real-time updates
+- **CrewAI**: Core framework for AI agent orchestration
 
 ## Project Structure
 
 ```
-crewai-hub-api/
+crewsummit-api/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py                 # FastAPI application entry point
+│   ├── config.py               # Configuration and environment variables
 │   ├── models/                 # Pydantic models
 │   │   ├── __init__.py
 │   │   ├── agent.py            # Agent data models
 │   │   ├── crew.py             # Crew data models
+│   │   ├── flow.py             # Flow data models
 │   │   └── task.py             # Task data models
-│   ├── routers/                # API route definitions
+│   ├── api/                    # API route definitions
 │   │   ├── __init__.py
 │   │   ├── agents.py           # Agent endpoints
 │   │   ├── crews.py            # Crew endpoints
+│   │   ├── flows.py            # Flow endpoints
 │   │   └── tasks.py            # Task endpoints
-│   └── services/               # Business logic
+│   ├── services/               # Business logic
+│   │   ├── __init__.py
+│   │   ├── agent_service.py    # Agent operations
+│   │   ├── crew_service.py     # Crew operations
+│   │   ├── flow_service.py     # Flow operations
+│   │   └── task_service.py     # Task operations
+│   └── repositories/           # Data access
 │       ├── __init__.py
-│       ├── agent_service.py    # Agent operations
-│       ├── crew_service.py     # Crew operations
-│       └── task_service.py     # Task operations
+│       ├── agent_repository.py
+│       ├── crew_repository.py
+│       └── task_repository.py
+├── tests/                      # Test suite
+│   ├── __init__.py
+│   ├── test_agents.py
+│   ├── test_crews.py
+│   └── test_tasks.py
 ├── .env                        # Environment variables
 ├── .gitignore
 ├── requirements.txt
@@ -50,46 +92,59 @@ crewai-hub-api/
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.8+
 - pip (Python package installer)
-- CrewAI framework installed and functional
+- CrewAI framework
+- Virtual environment tool (venv or conda)
 
 ### Installation
 
-1. Create a new directory for your API project:
-   ```bash
-   mkdir crewai-hub-api
-   cd crewai-hub-api
-   ```
-
-2. Set up a virtual environment:
+1. Create and activate a virtual environment:
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install required packages:
+2. Install required packages:
    ```bash
-   pip install fastapi uvicorn pydantic crewai python-dotenv
+   pip install fastapi uvicorn pydantic crewai python-dotenv sqlalchemy
    ```
 
-4. Create a `requirements.txt` file:
-   ```bash
-   pip freeze > requirements.txt
+3. Create a `.env` file with the following variables:
+   ```
+   # API Configuration
+   API_HOST=0.0.0.0
+   API_PORT=8000
+   DEBUG=True
+   
+   # Security
+   SECRET_KEY=your_secret_key_here
+   
+   # Database (if using)
+   DATABASE_URL=sqlite:///./crewsummit.db
+   
+   # LLM Configuration
+   OPENAI_API_KEY=your_openai_api_key
+   ANTHROPIC_API_KEY=your_anthropic_api_key
    ```
 
-## Implementation
+4. Start the API server:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
 
-### Core Models
+## Core Data Models
 
-Create Pydantic models that match the frontend data structures. Below are the key models to implement:
+The API uses Pydantic models that align with the frontend data structures:
 
-#### Agent Model (app/models/agent.py)
+### Agent Model
 
 ```python
 from pydantic import BaseModel
 from typing import List, Optional
 from enum import Enum
+from uuid import UUID, uuid4
+from datetime import datetime
 
 
 class AgentRole(str, Enum):
@@ -109,27 +164,30 @@ class AgentStatus(str, Enum):
     ERROR = "error"
 
 
-class Agent(BaseModel):
-    id: str
+class AgentCreate(BaseModel):
     name: str
     role: AgentRole
     description: str
-    status: AgentStatus
     llm: str
     tools: List[str]
     memory: Optional[str] = None
+
+
+class Agent(AgentCreate):
+    id: UUID = Field(default_factory=uuid4)
+    status: AgentStatus = AgentStatus.IDLE
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
 ```
 
-#### Crew Model (app/models/crew.py)
+### Crew Model
 
 ```python
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from enum import Enum
+from uuid import UUID, uuid4
 from datetime import datetime
-
-from .agent import Agent
-from .task import Task
 
 
 class TaskExecutionStrategy(str, Enum):
@@ -145,29 +203,38 @@ class CrewStatus(str, Enum):
 
 
 class CrewConfig(BaseModel):
-    verbose: bool
-    maxIterations: int
-    taskExecutionStrategy: TaskExecutionStrategy
+    verbose: bool = True
+    max_iterations: int = 5
+    task_execution_strategy: TaskExecutionStrategy = TaskExecutionStrategy.SEQUENTIAL
+
+
+class CrewCreate(BaseModel):
+    name: str
+    description: str
+    agent_ids: List[UUID]
+    config: CrewConfig = Field(default_factory=CrewConfig)
 
 
 class Crew(BaseModel):
-    id: str
+    id: UUID = Field(default_factory=uuid4)
     name: str
     description: str
-    agents: List[Agent]
-    tasks: List[Task]
-    status: CrewStatus
-    createdAt: str
-    lastRun: Optional[str] = None
+    agent_ids: List[UUID]
+    task_ids: List[UUID] = []
+    status: CrewStatus = CrewStatus.IDLE
+    created_at: datetime = Field(default_factory=datetime.now)
+    last_run: Optional[datetime] = None
     config: CrewConfig
 ```
 
-#### Task Model (app/models/task.py)
+### Task Model
 
 ```python
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from enum import Enum
+from uuid import UUID, uuid4
+from datetime import datetime
 
 
 class TaskStatus(str, Enum):
@@ -177,424 +244,73 @@ class TaskStatus(str, Enum):
     FAILED = "failed"
 
 
-class Task(BaseModel):
-    id: str
+class TaskCreate(BaseModel):
     description: str
-    assignedTo: str  # Agent ID
-    status: TaskStatus
+    assigned_to: UUID  # Agent ID
+
+
+class Task(TaskCreate):
+    id: UUID = Field(default_factory=uuid4)
+    status: TaskStatus = TaskStatus.PENDING
     output: Optional[str] = None
-    createdAt: str
-    completedAt: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.now)
+    completed_at: Optional[datetime] = None
 ```
 
-### API Routes
-
-Create the following endpoints to manage agents, crews, and tasks:
-
-#### Agent Routes (app/routers/agents.py)
-
-```python
-from fastapi import APIRouter, HTTPException, status
-from typing import List
-from uuid import uuid4
-from datetime import datetime
-
-from ..models.agent import Agent, AgentRole, AgentStatus
-from ..services.agent_service import AgentService
-
-router = APIRouter(prefix="/agents", tags=["agents"])
-agent_service = AgentService()
-
-
-@router.get("/", response_model=List[Agent])
-async def get_agents():
-    return agent_service.get_all_agents()
-
-
-@router.get("/{agent_id}", response_model=Agent)
-async def get_agent(agent_id: str):
-    agent = agent_service.get_agent_by_id(agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    return agent
-
-
-@router.post("/", response_model=Agent, status_code=status.HTTP_201_CREATED)
-async def create_agent(agent: Agent):
-    return agent_service.create_agent(agent)
-
-
-@router.put("/{agent_id}", response_model=Agent)
-async def update_agent(agent_id: str, agent: Agent):
-    updated_agent = agent_service.update_agent(agent_id, agent)
-    if not updated_agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    return updated_agent
-
-
-@router.delete("/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_agent(agent_id: str):
-    deleted = agent_service.delete_agent(agent_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    return None
-```
-
-#### Crew Routes (app/routers/crews.py)
-
-```python
-from fastapi import APIRouter, HTTPException, status
-from typing import List
-from uuid import uuid4
-from datetime import datetime
-
-from ..models.crew import Crew, CrewStatus
-from ..services.crew_service import CrewService
-
-router = APIRouter(prefix="/crews", tags=["crews"])
-crew_service = CrewService()
-
-
-@router.get("/", response_model=List[Crew])
-async def get_crews():
-    return crew_service.get_all_crews()
-
-
-@router.get("/{crew_id}", response_model=Crew)
-async def get_crew(crew_id: str):
-    crew = crew_service.get_crew_by_id(crew_id)
-    if not crew:
-        raise HTTPException(status_code=404, detail="Crew not found")
-    return crew
-
-
-@router.post("/", response_model=Crew, status_code=status.HTTP_201_CREATED)
-async def create_crew(crew: Crew):
-    return crew_service.create_crew(crew)
-
-
-@router.put("/{crew_id}", response_model=Crew)
-async def update_crew(crew_id: str, crew: Crew):
-    updated_crew = crew_service.update_crew(crew_id, crew)
-    if not updated_crew:
-        raise HTTPException(status_code=404, detail="Crew not found")
-    return updated_crew
-
-
-@router.delete("/{crew_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_crew(crew_id: str):
-    deleted = crew_service.delete_crew(crew_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Crew not found")
-    return None
-
-
-@router.post("/{crew_id}/run", response_model=Crew)
-async def run_crew(crew_id: str):
-    crew = crew_service.run_crew(crew_id)
-    if not crew:
-        raise HTTPException(status_code=404, detail="Crew not found")
-    return crew
-```
-
-#### Task Routes (app/routers/tasks.py)
-
-```python
-from fastapi import APIRouter, HTTPException, status
-from typing import List
-from uuid import uuid4
-from datetime import datetime
-
-from ..models.task import Task, TaskStatus
-from ..services.task_service import TaskService
-
-router = APIRouter(prefix="/tasks", tags=["tasks"])
-task_service = TaskService()
-
-
-@router.get("/", response_model=List[Task])
-async def get_tasks():
-    return task_service.get_all_tasks()
-
-
-@router.get("/{task_id}", response_model=Task)
-async def get_task(task_id: str):
-    task = task_service.get_task_by_id(task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return task
-
-
-@router.post("/", response_model=Task, status_code=status.HTTP_201_CREATED)
-async def create_task(task: Task):
-    return task_service.create_task(task)
-
-
-@router.put("/{task_id}", response_model=Task)
-async def update_task(task_id: str, task: Task):
-    updated_task = task_service.update_task(task_id, task)
-    if not updated_task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return updated_task
-
-
-@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_task(task_id: str):
-    deleted = task_service.delete_task(task_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return None
-```
-
-### Services
-
-Implement services that handle the business logic and interact with your CrewAI implementation:
-
-#### Agent Service (app/services/agent_service.py)
-
-```python
-from typing import List, Optional
-import uuid
-from datetime import datetime
-
-from ..models.agent import Agent, AgentStatus
-
-
-class AgentService:
-    # This would be replaced with database storage in a production app
-    _agents = {}
-
-    def get_all_agents(self) -> List[Agent]:
-        return list(self._agents.values())
-
-    def get_agent_by_id(self, agent_id: str) -> Optional[Agent]:
-        return self._agents.get(agent_id)
-
-    def create_agent(self, agent: Agent) -> Agent:
-        # Here you would translate the agent model to a CrewAI agent
-        # Example:
-        # from crewai import Agent as CrewAIAgent
-        # crewai_agent = CrewAIAgent(
-        #     name=agent.name,
-        #     role=agent.role,
-        #     goal=agent.description,
-        #     backstory=agent.description,
-        #     llm=self._get_llm_for_agent(agent.llm),
-        #     tools=self._get_tools_for_agent(agent.tools)
-        # )
-        
-        # For this example, we'll just store the agent model
-        if not agent.id:
-            agent.id = str(uuid4())
-        
-        if not agent.status:
-            agent.status = AgentStatus.IDLE
-            
-        self._agents[agent.id] = agent
-        return agent
-
-    def update_agent(self, agent_id: str, agent: Agent) -> Optional[Agent]:
-        if agent_id not in self._agents:
-            return None
-            
-        # Update CrewAI agent implementation here
-        
-        self._agents[agent_id] = agent
-        return agent
-
-    def delete_agent(self, agent_id: str) -> bool:
-        if agent_id not in self._agents:
-            return False
-            
-        # Clean up CrewAI agent implementation here
-        
-        del self._agents[agent_id]
-        return True
-        
-    # Helper methods to map between API models and CrewAI objects
-    def _get_llm_for_agent(self, llm_name: str):
-        # Implement logic to return the appropriate LLM based on the name
-        pass
-        
-    def _get_tools_for_agent(self, tool_names: List[str]):
-        # Implement logic to return the appropriate tools based on the names
-        pass
-```
-
-#### Crew Service (app/services/crew_service.py)
-
-```python
-from typing import List, Optional
-import uuid
-from datetime import datetime
-
-from ..models.crew import Crew, CrewStatus
-from ..models.task import TaskStatus
-
-
-class CrewService:
-    # This would be replaced with database storage in a production app
-    _crews = {}
-
-    def get_all_crews(self) -> List[Crew]:
-        return list(self._crews.values())
-
-    def get_crew_by_id(self, crew_id: str) -> Optional[Crew]:
-        return self._crews.get(crew_id)
-
-    def create_crew(self, crew: Crew) -> Crew:
-        # Here you would translate the crew model to a CrewAI crew
-        # Example:
-        # from crewai import Crew as CrewAICrew
-        # crewai_agents = [self._get_crewai_agent(agent_id) for agent in crew.agents]
-        # crewai_tasks = [self._get_crewai_task(task_id) for task in crew.tasks]
-        # crewai_crew = CrewAICrew(
-        #     agents=crewai_agents,
-        #     tasks=crewai_tasks,
-        #     verbose=crew.config.verbose,
-        #     process=crew.config.taskExecutionStrategy
-        # )
-        
-        # For this example, we'll just store the crew model
-        if not crew.id:
-            crew.id = str(uuid4())
-        
-        if not crew.createdAt:
-            crew.createdAt = datetime.now().isoformat()
-            
-        if not crew.status:
-            crew.status = CrewStatus.IDLE
-            
-        self._crews[crew.id] = crew
-        return crew
-
-    def update_crew(self, crew_id: str, crew: Crew) -> Optional[Crew]:
-        if crew_id not in self._crews:
-            return None
-            
-        # Update CrewAI crew implementation here
-        
-        self._crews[crew_id] = crew
-        return crew
-
-    def delete_crew(self, crew_id: str) -> bool:
-        if crew_id not in self._crews:
-            return False
-            
-        # Clean up CrewAI crew implementation here
-        
-        del self._crews[crew_id]
-        return True
-        
-    def run_crew(self, crew_id: str) -> Optional[Crew]:
-        if crew_id not in self._crews:
-            return None
-            
-        crew = self._crews[crew_id]
-        
-        # Here you would run the CrewAI crew
-        # Example:
-        # crewai_crew = self._get_crewai_crew(crew)
-        # result = crewai_crew.run()
-        # Then update the tasks with the results
-        
-        # For this example, we'll just update the status
-        crew.status = CrewStatus.RUNNING
-        
-        # In a real implementation, you would start this process in the background
-        # and update the status when it completes
-        
-        return crew
-        
-    # Helper methods to map between API models and CrewAI objects
-    def _get_crewai_agent(self, agent):
-        # Implement logic to convert API agent to CrewAI agent
-        pass
-        
-    def _get_crewai_task(self, task):
-        # Implement logic to convert API task to CrewAI task
-        pass
-        
-    def _get_crewai_crew(self, crew):
-        # Implement logic to convert API crew to CrewAI crew
-        pass
-```
-
-#### Task Service (app/services/task_service.py)
-
-```python
-from typing import List, Optional
-import uuid
-from datetime import datetime
-
-from ..models.task import Task, TaskStatus
-
-
-class TaskService:
-    # This would be replaced with database storage in a production app
-    _tasks = {}
-
-    def get_all_tasks(self) -> List[Task]:
-        return list(self._tasks.values())
-
-    def get_task_by_id(self, task_id: str) -> Optional[Task]:
-        return self._tasks.get(task_id)
-
-    def create_task(self, task: Task) -> Task:
-        # Here you would translate the task model to a CrewAI task
-        # Example:
-        # from crewai import Task as CrewAITask
-        # crewai_task = CrewAITask(
-        #     description=task.description,
-        #     agent=self._get_agent_for_task(task.assignedTo)
-        # )
-        
-        # For this example, we'll just store the task model
-        if not task.id:
-            task.id = str(uuid4())
-        
-        if not task.createdAt:
-            task.createdAt = datetime.now().isoformat()
-            
-        if not task.status:
-            task.status = TaskStatus.PENDING
-            
-        self._tasks[task.id] = task
-        return task
-
-    def update_task(self, task_id: str, task: Task) -> Optional[Task]:
-        if task_id not in self._tasks:
-            return None
-            
-        # Update CrewAI task implementation here
-        
-        self._tasks[task_id] = task
-        return task
-
-    def delete_task(self, task_id: str) -> bool:
-        if task_id not in self._tasks:
-            return False
-            
-        # Clean up CrewAI task implementation here
-        
-        del self._tasks[task_id]
-        return True
-        
-    # Helper methods to map between API models and CrewAI objects
-    def _get_agent_for_task(self, agent_id: str):
-        # Implement logic to return the appropriate CrewAI agent based on the ID
-        pass
-```
-
-### Main Application (app/main.py)
+## API Endpoints
+
+### Agent Endpoints
+
+| Method | Endpoint             | Description           | Request Body  | Response          |
+|--------|----------------------|-----------------------|---------------|-------------------|
+| GET    | /agents              | Get all agents        | -             | List[Agent]       |
+| GET    | /agents/{agent_id}   | Get agent by ID       | -             | Agent             |
+| POST   | /agents              | Create a new agent    | AgentCreate   | Agent             |
+| PUT    | /agents/{agent_id}   | Update an agent       | AgentUpdate   | Agent             |
+| DELETE | /agents/{agent_id}   | Delete an agent       | -             | 204 No Content    |
+
+### Crew Endpoints
+
+| Method | Endpoint             | Description          | Request Body  | Response          |
+|--------|----------------------|----------------------|---------------|-------------------|
+| GET    | /crews               | Get all crews        | -             | List[Crew]        |
+| GET    | /crews/{crew_id}     | Get crew by ID       | -             | Crew              |
+| POST   | /crews               | Create a new crew    | CrewCreate    | Crew              |
+| PUT    | /crews/{crew_id}     | Update a crew        | CrewUpdate    | Crew              |
+| DELETE | /crews/{crew_id}     | Delete a crew        | -             | 204 No Content    |
+| POST   | /crews/{crew_id}/run | Execute a crew       | -             | Crew              |
+
+### Task Endpoints
+
+| Method | Endpoint             | Description          | Request Body  | Response          |
+|--------|----------------------|----------------------|---------------|-------------------|
+| GET    | /tasks               | Get all tasks        | -             | List[Task]        |
+| GET    | /tasks/{task_id}     | Get task by ID       | -             | Task              |
+| POST   | /tasks               | Create a new task    | TaskCreate    | Task              |
+| PUT    | /tasks/{task_id}     | Update a task        | TaskUpdate    | Task              |
+| DELETE | /tasks/{task_id}     | Delete a task        | -             | 204 No Content    |
+
+### Flow Endpoints
+
+| Method | Endpoint              | Description          | Request Body   | Response          |
+|--------|------------------------|---------------------|----------------|-------------------|
+| GET    | /flows                 | Get all flows       | -              | List[Flow]        |
+| GET    | /flows/{flow_id}       | Get flow by ID      | -              | Flow              |
+| POST   | /flows                 | Create a new flow   | FlowCreate     | Flow              |
+| PUT    | /flows/{flow_id}       | Update a flow       | FlowUpdate     | Flow              |
+| DELETE | /flows/{flow_id}       | Delete a flow       | -              | 204 No Content    |
+| POST   | /flows/{flow_id}/run   | Execute a flow      | -              | Flow              |
+
+## Implementation Examples
+
+### Main Application
 
 ```python
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api import agents, crews, tasks, flows
 
-from .routers import agents, crews, tasks
-
-app = FastAPI(title="CrewAI Hub API")
+app = FastAPI(title="CrewSUMMIT API")
 
 # Configure CORS
 app.add_middleware(
@@ -606,150 +322,346 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(agents.router)
-app.include_router(crews.router)
-app.include_router(tasks.router)
+app.include_router(agents.router, prefix="/api/v1")
+app.include_router(crews.router, prefix="/api/v1")
+app.include_router(tasks.router, prefix="/api/v1")
+app.include_router(flows.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to CrewAI Hub API"}
+    return {"message": "Welcome to CrewSUMMIT API"}
 ```
 
-## Running the API
+### Agent Router Implementation
 
-1. Start the API server:
-   ```bash
-   uvicorn app.main:app --reload
-   ```
+```python
+from fastapi import APIRouter, HTTPException, status, Depends
+from typing import List
+from uuid import UUID
 
-2. Access the API documentation at `http://127.0.0.1:8000/docs`
+from app.models.agent import Agent, AgentCreate, AgentUpdate
+from app.services.agent_service import AgentService
 
-## Connecting to the Frontend
+router = APIRouter(prefix="/agents", tags=["agents"])
 
-To connect the CrewAI Hub frontend to your API:
+@router.get("/", response_model=List[Agent])
+async def get_agents(
+    agent_service: AgentService = Depends()
+):
+    return agent_service.get_all_agents()
 
-1. Create an API client in the frontend to make requests to your API endpoints. For example, create a new file `src/lib/api.ts`:
+@router.get("/{agent_id}", response_model=Agent)
+async def get_agent(
+    agent_id: UUID,
+    agent_service: AgentService = Depends()
+):
+    agent = agent_service.get_agent_by_id(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return agent
 
-```typescript
-// Define the base URL for API requests
-const API_BASE_URL = 'http://localhost:8000';
+@router.post("/", response_model=Agent, status_code=status.HTTP_201_CREATED)
+async def create_agent(
+    agent_create: AgentCreate,
+    agent_service: AgentService = Depends()
+):
+    return agent_service.create_agent(agent_create)
 
-// Generic fetch function with error handling
-async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+@router.put("/{agent_id}", response_model=Agent)
+async def update_agent(
+    agent_id: UUID,
+    agent_update: AgentUpdate,
+    agent_service: AgentService = Depends()
+):
+    updated_agent = agent_service.update_agent(agent_id, agent_update)
+    if not updated_agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return updated_agent
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'An error occurred');
-  }
-
-  return response.json();
-}
-
-// API methods for Agents
-export const agentAPI = {
-  getAll: () => fetchAPI<Agent[]>('/agents'),
-  getById: (id: string) => fetchAPI<Agent>(`/agents/${id}`),
-  create: (agent: Omit<Agent, 'id'>) => 
-    fetchAPI<Agent>('/agents', {
-      method: 'POST',
-      body: JSON.stringify(agent),
-    }),
-  update: (id: string, agent: Agent) =>
-    fetchAPI<Agent>(`/agents/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(agent),
-    }),
-  delete: (id: string) =>
-    fetchAPI(`/agents/${id}`, { method: 'DELETE' }),
-};
-
-// API methods for Crews
-export const crewAPI = {
-  getAll: () => fetchAPI<Crew[]>('/crews'),
-  getById: (id: string) => fetchAPI<Crew>(`/crews/${id}`),
-  create: (crew: Omit<Crew, 'id'>) =>
-    fetchAPI<Crew>('/crews', {
-      method: 'POST',
-      body: JSON.stringify(crew),
-    }),
-  update: (id: string, crew: Crew) =>
-    fetchAPI<Crew>(`/crews/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(crew),
-    }),
-  delete: (id: string) =>
-    fetchAPI(`/crews/${id}`, { method: 'DELETE' }),
-  run: (id: string) =>
-    fetchAPI<Crew>(`/crews/${id}/run`, { method: 'POST' }),
-};
-
-// API methods for Tasks
-export const taskAPI = {
-  getAll: () => fetchAPI<Task[]>('/tasks'),
-  getById: (id: string) => fetchAPI<Task>(`/tasks/${id}`),
-  create: (task: Omit<Task, 'id'>) =>
-    fetchAPI<Task>('/tasks', {
-      method: 'POST',
-      body: JSON.stringify(task),
-    }),
-  update: (id: string, task: Task) =>
-    fetchAPI<Task>(`/tasks/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(task),
-    }),
-  delete: (id: string) =>
-    fetchAPI(`/tasks/${id}`, { method: 'DELETE' }),
-};
+@router.delete("/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_agent(
+    agent_id: UUID,
+    agent_service: AgentService = Depends()
+):
+    deleted = agent_service.delete_agent(agent_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return None
 ```
 
-2. Update the frontend components to use the API client instead of mock data.
+## CrewAI Integration
 
-## Integrating with CrewAI Framework
+### Agent Service Integration
 
-To fully integrate with your CrewAI framework:
+```python
+from crewai import Agent as CrewAIAgent
+from app.models.agent import Agent, AgentCreate
+from typing import Optional
+import openai
 
-1. Import your CrewAI implementation in the service files
-2. Implement the helper methods that convert between API models and CrewAI objects
-3. Add proper error handling and logging
-4. Consider adding persistence (database) for storing state between API calls
+class AgentService:
+    def _create_crewai_agent(self, agent: Agent) -> CrewAIAgent:
+        return CrewAIAgent(
+            name=agent.name,
+            role=agent.role.value,
+            goal=agent.description,
+            backstory=agent.description,
+            llm=self._get_llm_for_agent(agent.llm),
+            tools=self._get_tools_for_agent(agent.tools)
+        )
+
+    def _get_llm_for_agent(self, llm_name: str):
+        if llm_name.startswith('gpt'):
+            return openai.ChatCompletion
+        # Add other LLM implementations as needed
+        raise ValueError(f"Unsupported LLM: {llm_name}")
+
+    def _get_tools_for_agent(self, tool_names: List[str]):
+        # Implement tool loading logic
+        pass
+```
+
+### Crew Service Integration
+
+```python
+from crewai import Crew as CrewAICrew
+from app.models.crew import Crew, CrewCreate
+from typing import Optional
+
+class CrewService:
+    def _create_crewai_crew(self, crew: Crew) -> CrewAICrew:
+        agents = [
+            self.agent_service._create_crewai_agent(agent)
+            for agent in self._get_agents_for_crew(crew)
+        ]
+        
+        return CrewAICrew(
+            agents=agents,
+            tasks=self._get_tasks_for_crew(crew),
+            process=crew.config.task_execution_strategy.value,
+            verbose=crew.config.verbose
+        )
+
+    def _get_agents_for_crew(self, crew: Crew):
+        return [
+            self.agent_service.get_agent_by_id(agent_id)
+            for agent_id in crew.agent_ids
+        ]
+
+    def _get_tasks_for_crew(self, crew: Crew):
+        return [
+            self.task_service.get_task_by_id(task_id)
+            for task_id in crew.task_ids
+        ]
+```
+
+## Error Handling
+
+Implement comprehensive error handling using FastAPI's exception handlers:
+
+```python
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(
+        status_code=400,
+        content={"message": str(exc)},
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={
+            "message": "An unexpected error occurred",
+            "detail": str(exc)
+        },
+    )
+```
+
+## Authentication
+
+Implement JWT-based authentication:
+
+```python
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
+from typing import Optional
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        return username
+    except JWTError:
+        raise credentials_exception
+```
+
+## WebSocket Support
+
+Add real-time updates using WebSocket connections:
+
+```python
+from fastapi import WebSocket
+from typing import List
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+manager = ConnectionManager()
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await manager.broadcast({"message": data})
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+```
 
 ## Advanced Features
 
-Once you have the basic API working, consider adding these advanced features:
+### File Upload Support
 
-1. **WebSocket Support**: For real-time updates during crew execution
-2. **Authentication**: Secure your API with JWT or API keys
-3. **Persistent Storage**: Add a database to store crew, agent, and task data
-4. **Result History**: Store and retrieve past crew execution results
-5. **File Handling**: Allow uploading and downloading of documents for tasks
+```python
+from fastapi import UploadFile, File
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    contents = await file.read()
+    # Process file contents
+    return {"filename": file.filename}
+```
+
+### Rate Limiting
+
+```python
+from fastapi import Request
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=lambda: "global")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.get("/limited")
+@limiter.limit("5/minute")
+async def rate_limited_route():
+    return {"message": "This is rate limited"}
+```
+
+## Deployment
+
+### Docker Support
+
+Create a `Dockerfile`:
+
+```dockerfile
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### Environment Configuration
+
+Use environment variables for configuration:
+
+```python
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
+    debug: bool = False
+    database_url: str
+    secret_key: str
+    
+    class Config:
+        env_file = ".env"
+
+settings = Settings()
+```
 
 ## Troubleshooting
 
-### CORS Issues
+### Common Issues
 
-If you encounter CORS errors when connecting the frontend to the API:
+1. **CORS Errors**
+   - Verify CORS middleware configuration
+   - Check allowed origins in settings
 
-1. Ensure the `allow_origins` in the CORS middleware includes your frontend URL
-2. Check that your requests include the correct headers
-3. Verify that your frontend is making requests to the correct API URL
+2. **Authentication Issues**
+   - Validate JWT token format
+   - Check token expiration
+   - Verify secret key configuration
 
-### CrewAI Integration Issues
+3. **Database Connection Problems**
+   - Confirm database URL is correct
+   - Check database credentials
+   - Verify network connectivity
 
-If you have trouble integrating with CrewAI:
+### Logging
 
-1. Ensure you're using compatible versions of CrewAI and its dependencies
-2. Check that your LLM configurations are correctly passed to CrewAI
-3. Consider starting with simple agents and tasks to verify the integration works
+Implement comprehensive logging:
+
+```python
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response: {response.status_code}")
+    return response
+```
 
 ## Additional Resources
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [CrewAI Documentation](https://docs.crewai.com/)
 - [Pydantic Documentation](https://docs.pydantic.dev/)
+- [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
+
