@@ -1,5 +1,5 @@
-
 import { AIProvider } from './types';
+import { AppError, ErrorType, withErrorHandling } from './errorHandler';
 
 // Sample AI provider configurations
 export const defaultAIProviders: AIProvider[] = [
@@ -37,10 +37,10 @@ export async function callAIProvider(
   apiKey: string
 ) {
   if (!apiKey) {
-    throw new Error('API key is required');
+    throw new AppError('API key is required', ErrorType.VALIDATION);
   }
 
-  try {
+  return withErrorHandling(async () => {
     let endpoint = '';
     let body = {};
     let headers: Record<string, string> = {
@@ -105,7 +105,7 @@ export async function callAIProvider(
         break;
         
       default:
-        throw new Error(`Unsupported provider type: ${provider.type}`);
+        throw new AppError(`Unsupported provider type: ${provider.type}`, ErrorType.VALIDATION);
     }
 
     // Make the API call
@@ -116,15 +116,16 @@ export async function callAIProvider(
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`API error: ${errorData.error?.message || response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new AppError(
+        `API error: ${errorData.error?.message || response.statusText}`, 
+        ErrorType.API, 
+        { status: response.status, errorData }
+      );
     }
 
     return await response.json();
-  } catch (error) {
-    console.error('Error calling AI provider:', error);
-    throw error;
-  }
+  });
 }
 
 // Function to validate API key

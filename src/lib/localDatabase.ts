@@ -1,5 +1,5 @@
-
 import { LocalDataConfig } from './types';
+import { AppError, ErrorType, handleError } from './errorHandler';
 
 // Default configuration
 const defaultConfig: LocalDataConfig = {
@@ -25,8 +25,9 @@ class LocalDatabase {
       const request = indexedDB.open(this.config.databaseName, 1);
 
       request.onerror = (event) => {
-        console.error('Error opening database:', event);
-        reject(new Error('Could not open local database'));
+        const error = new AppError(`Failed to open database: ${this.config.databaseName}`, ErrorType.DATABASE, event);
+        console.error(error);
+        reject(error);
       };
 
       request.onsuccess = (event) => {
@@ -65,51 +66,57 @@ class LocalDatabase {
   }
 
   public async getCollection<T>(collection: string): Promise<T[]> {
-    if (!this.db) await this.initialize();
-    
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
+    try {
+      if (!this.db) await this.initialize();
       
-      const transaction = this.db.transaction(collection, 'readonly');
-      const store = transaction.objectStore(collection);
-      const request = store.getAll();
-      
-      request.onsuccess = () => {
-        resolve(request.result);
-      };
-      
-      request.onerror = (event) => {
-        console.error(`Error getting collection ${collection}:`, event);
-        reject(new Error(`Failed to get collection ${collection}`));
-      };
-    });
+      return new Promise((resolve, reject) => {
+        if (!this.db) {
+          reject(new AppError('Database not initialized', ErrorType.DATABASE));
+          return;
+        }
+        
+        const transaction = this.db.transaction(collection, 'readonly');
+        const store = transaction.objectStore(collection);
+        const request = store.getAll();
+        
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+        
+        request.onerror = (event) => {
+          reject(new AppError(`Failed to get collection ${collection}`, ErrorType.DATABASE, event));
+        };
+      });
+    } catch (error) {
+      throw handleError(error, false);
+    }
   }
 
   public async getItem<T>(collection: string, id: string): Promise<T | null> {
-    if (!this.db) await this.initialize();
-    
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
+    try {
+      if (!this.db) await this.initialize();
       
-      const transaction = this.db.transaction(collection, 'readonly');
-      const store = transaction.objectStore(collection);
-      const request = store.get(id);
-      
-      request.onsuccess = () => {
-        resolve(request.result || null);
-      };
-      
-      request.onerror = (event) => {
-        console.error(`Error getting item ${id} from ${collection}:`, event);
-        reject(new Error(`Failed to get item ${id} from ${collection}`));
-      };
-    });
+      return new Promise((resolve, reject) => {
+        if (!this.db) {
+          reject(new AppError('Database not initialized', ErrorType.DATABASE));
+          return;
+        }
+        
+        const transaction = this.db.transaction(collection, 'readonly');
+        const store = transaction.objectStore(collection);
+        const request = store.get(id);
+        
+        request.onsuccess = () => {
+          resolve(request.result || null);
+        };
+        
+        request.onerror = (event) => {
+          reject(new AppError(`Failed to get item ${id} from ${collection}`, ErrorType.DATABASE, event));
+        };
+      });
+    } catch (error) {
+      throw handleError(error, false);
+    }
   }
 
   public async addItem<T>(collection: string, item: T): Promise<T> {
@@ -117,7 +124,7 @@ class LocalDatabase {
     
     return new Promise((resolve, reject) => {
       if (!this.db) {
-        reject(new Error('Database not initialized'));
+        reject(new AppError('Database not initialized', ErrorType.DATABASE));
         return;
       }
       
@@ -131,7 +138,7 @@ class LocalDatabase {
       
       request.onerror = (event) => {
         console.error(`Error adding item to ${collection}:`, event);
-        reject(new Error(`Failed to add item to ${collection}`));
+        reject(new AppError(`Failed to add item to ${collection}`, ErrorType.DATABASE, event));
       };
     });
   }
@@ -141,7 +148,7 @@ class LocalDatabase {
     
     return new Promise((resolve, reject) => {
       if (!this.db) {
-        reject(new Error('Database not initialized'));
+        reject(new AppError('Database not initialized', ErrorType.DATABASE));
         return;
       }
       
@@ -155,7 +162,7 @@ class LocalDatabase {
       
       request.onerror = (event) => {
         console.error(`Error updating item in ${collection}:`, event);
-        reject(new Error(`Failed to update item in ${collection}`));
+        reject(new AppError(`Failed to update item in ${collection}`, ErrorType.DATABASE, event));
       };
     });
   }
@@ -165,7 +172,7 @@ class LocalDatabase {
     
     return new Promise((resolve, reject) => {
       if (!this.db) {
-        reject(new Error('Database not initialized'));
+        reject(new AppError('Database not initialized', ErrorType.DATABASE));
         return;
       }
       
@@ -179,7 +186,7 @@ class LocalDatabase {
       
       request.onerror = (event) => {
         console.error(`Error deleting item ${id} from ${collection}:`, event);
-        reject(new Error(`Failed to delete item ${id} from ${collection}`));
+        reject(new AppError(`Failed to delete item ${id} from ${collection}`, ErrorType.DATABASE, event));
       };
     });
   }
@@ -201,6 +208,7 @@ class LocalDatabase {
       console.log('Database backup created');
     } catch (error) {
       console.error('Error creating database backup:', error);
+      throw handleError(error, false);
     }
   }
 
@@ -208,7 +216,7 @@ class LocalDatabase {
     try {
       const backup = backupData || localStorage.getItem('crewai-db-backup');
       if (!backup) {
-        throw new Error('No backup found');
+        throw new AppError('No backup found', ErrorType.DATABASE);
       }
       
       const { data } = JSON.parse(backup);
@@ -231,7 +239,7 @@ class LocalDatabase {
       console.log('Database restored from backup');
     } catch (error) {
       console.error('Error restoring database from backup:', error);
-      throw error;
+      throw handleError(error, false);
     }
   }
 
