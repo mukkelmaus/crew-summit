@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Flow } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -47,13 +46,11 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
   const [showTags, setShowTags] = useState(true);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   
-  // Generate sample logs for demonstration
   useEffect(() => {
     const generateSampleLogs = () => {
       const sampleLogs: LogEntry[] = [];
       const startTime = flow.lastRun ? new Date(flow.lastRun) : new Date();
       
-      // Add some initial logs
       sampleLogs.push({
         id: "1",
         timestamp: startTime.toISOString(),
@@ -63,11 +60,9 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
         tags: ["flow-start", "system-event"]
       });
       
-      // Add logs for each node
       flow.nodes.forEach((node, index) => {
         const nodeTime = new Date(startTime.getTime() + (index + 1) * 3000);
         
-        // System log for node start
         sampleLogs.push({
           id: `node-${node.id}-start`,
           timestamp: nodeTime.toISOString(),
@@ -78,7 +73,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
           tags: ["node-execution", node.type]
         });
         
-        // Add API call log for some nodes
         if (node.type === 'task' || node.type === 'data_operation') {
           const apiTime = new Date(nodeTime.getTime() + 1000);
           sampleLogs.push({
@@ -93,7 +87,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
           });
         }
         
-        // Add data operation logs for data_operation nodes
         if (node.type === 'data_operation') {
           const dataTime = new Date(nodeTime.getTime() + 1500);
           sampleLogs.push({
@@ -108,7 +101,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
           });
         }
         
-        // Add agent activity logs for task nodes
         if (node.type === 'task' && node.data.agentId) {
           const agentTime = new Date(nodeTime.getTime() + 1800);
           sampleLogs.push({
@@ -123,12 +115,10 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
           });
         }
         
-        // Add random success/warning/error for demonstration
         const outcome = Math.random();
         const outcomeTime = new Date(nodeTime.getTime() + 2000);
         
         if (outcome > 0.8) {
-          // Error
           sampleLogs.push({
             id: `node-${node.id}-end`,
             timestamp: outcomeTime.toISOString(),
@@ -140,7 +130,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
             tags: ["execution-error", "connection-issue"]
           });
         } else if (outcome > 0.6) {
-          // Warning
           sampleLogs.push({
             id: `node-${node.id}-end`,
             timestamp: outcomeTime.toISOString(),
@@ -152,7 +141,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
             tags: ["execution-warning", "performance-issue"]
           });
         } else {
-          // Success
           sampleLogs.push({
             id: `node-${node.id}-end`,
             timestamp: outcomeTime.toISOString(),
@@ -165,7 +153,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
         }
       });
       
-      // Final log
       const endTime = new Date(startTime.getTime() + (flow.nodes.length + 2) * 3000);
       sampleLogs.push({
         id: "final",
@@ -186,7 +173,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
     setLogs(generateSampleLogs());
   }, [flow]);
   
-  // Filter logs based on search term, log level, and category
   const filteredLogs = logs.filter(log => {
     const matchesSearch = 
       log.message.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -219,7 +205,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
   };
   
   const getLogClass = (level: string, category: string) => {
-    // Base classes by level
     const baseClass = {
       "info": "border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800",
       "warning": "border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-800",
@@ -227,7 +212,6 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
       "success": "border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800"
     }[level] || "";
     
-    // Add category-specific accents
     if (category === "api") {
       return `${baseClass} border-l-4 border-l-purple-500`;
     } else if (category === "data") {
@@ -293,6 +277,18 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+  
+  const handleTimestampsChange = (checked: boolean | "indeterminate") => {
+    setShowTimestamps(checked === true);
+  };
+  
+  const handleDetailsChange = (checked: boolean | "indeterminate") => {
+    setShowDetails(checked === true);
+  };
+  
+  const handleTagsChange = (checked: boolean | "indeterminate") => {
+    setShowTags(checked === true);
   };
   
   return (
@@ -362,15 +358,27 @@ export default function FlowLogger({ flow }: FlowLoggerProps) {
       
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <div className="flex items-center space-x-2">
-          <Checkbox id="show-timestamps" checked={showTimestamps} onCheckedChange={setShowTimestamps} />
+          <Checkbox 
+            id="show-timestamps" 
+            checked={showTimestamps} 
+            onCheckedChange={handleTimestampsChange}
+          />
           <label htmlFor="show-timestamps" className="cursor-pointer">Show Timestamps</label>
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox id="show-details" checked={showDetails} onCheckedChange={setShowDetails} />
+          <Checkbox 
+            id="show-details" 
+            checked={showDetails} 
+            onCheckedChange={handleDetailsChange}
+          />
           <label htmlFor="show-details" className="cursor-pointer">Show Details</label>
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox id="show-tags" checked={showTags} onCheckedChange={setShowTags} />
+          <Checkbox 
+            id="show-tags" 
+            checked={showTags} 
+            onCheckedChange={handleTagsChange}
+          />
           <label htmlFor="show-tags" className="cursor-pointer">Show Tags</label>
         </div>
         
