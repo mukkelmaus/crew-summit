@@ -2,6 +2,7 @@
 import { Crew } from "@/lib/types";
 import { mockCrews } from "@/lib/data";
 import { localDB } from "@/lib/localDatabase";
+import { v4 as uuidv4 } from "uuid";
 
 // For development/demo purposes before backend is implemented
 const USE_MOCK_API = true;
@@ -198,7 +199,6 @@ export const CrewService = {
   async runCrew(id: string, options = { async: true }): Promise<{ runId: string }> {
     if (USE_MOCK_API) {
       try {
-        const { v4: uuidv4 } = await import("uuid");
         const runId = uuidv4();
         
         // Update crew status in local DB

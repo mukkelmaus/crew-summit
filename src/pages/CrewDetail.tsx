@@ -9,6 +9,7 @@ import CrewCardDetails from "@/components/CrewCardDetails";
 import TaskList from "@/components/TaskList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -30,9 +31,16 @@ export default function CrewDetail() {
         
         // Load tasks for this crew
         const allTasks = await TaskService.getTasks();
-        const crewTasks = allTasks.filter(task => 
-          crewData.tasks.includes(task.id)
-        );
+        const crewTasks = allTasks.filter(task => {
+          // Match tasks with the crew's task list
+          return crewData.tasks.some(crewTask => {
+            if (typeof crewTask === 'string') {
+              return crewTask === task.id;
+            } else {
+              return crewTask.id === task.id;
+            }
+          });
+        });
         setTasks(crewTasks);
       } catch (error) {
         console.error("Error loading crew details:", error);

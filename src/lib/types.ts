@@ -40,7 +40,7 @@ export interface Crew {
   name: string;
   description: string;
   agents: Agent[];
-  tasks: Task[];
+  tasks: (Task | string)[]; // Allow both Task objects and ID strings
   status: CrewStatus;
   createdAt: string;
   lastRun?: string;

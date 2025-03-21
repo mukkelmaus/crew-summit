@@ -123,7 +123,7 @@ export const mockCrews: Crew[] = [
       mockAgents[0], // Data Analyst
       mockAgents[1]  // Research Assistant
     ],
-    tasks: [mockTasks[0].id, mockTasks[1].id],
+    tasks: [mockTasks[0], mockTasks[1]],
     status: "idle",
     createdAt: "2023-05-10T14:30:00Z",
     config: {
@@ -140,7 +140,7 @@ export const mockCrews: Crew[] = [
       mockAgents[2], // Content Writer
       mockAgents[3]  // Content Reviewer
     ],
-    tasks: [mockTasks[2].id, mockTasks[3].id],
+    tasks: [mockTasks[2], mockTasks[3]],
     status: "running",
     createdAt: "2023-06-15T09:45:00Z",
     lastRun: "2023-07-20T11:30:00Z",
@@ -158,7 +158,7 @@ export const mockCrews: Crew[] = [
       mockAgents[4], // UI Designer
       mockAgents[5]  // Code Generator
     ],
-    tasks: [mockTasks[4].id, mockTasks[5].id],
+    tasks: [mockTasks[4], mockTasks[5]],
     status: "completed",
     createdAt: "2023-07-05T16:20:00Z",
     lastRun: "2023-07-25T14:10:00Z",
