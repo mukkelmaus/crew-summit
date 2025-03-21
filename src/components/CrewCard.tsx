@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -81,8 +80,22 @@ export default function CrewCard({ crew }: CrewCardProps) {
     });
   };
 
-  // Filter flows for this crew
   const crewFlows = mockFlows.filter(flow => flow.crewId === crew.id);
+
+  // Convert task IDs to task objects for TaskList component
+  const crewTasksForDisplay = crew.tasks.map(task => {
+    if (typeof task === 'string') {
+      // Create a minimal Task object for display purposes
+      return {
+        id: task,
+        description: `Task ${task}`,
+        assignedTo: '',
+        status: 'pending' as const,
+        createdAt: '',
+      };
+    }
+    return task;
+  });
 
   return (
     <>
@@ -225,7 +238,7 @@ export default function CrewCard({ crew }: CrewCardProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
-            <TaskList tasks={crew.tasks} agentMap={agentMap} />
+            <TaskList tasks={crewTasksForDisplay} agentMap={agentMap} />
           </div>
         </DialogContent>
       </Dialog>

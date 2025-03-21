@@ -1,4 +1,3 @@
-
 export type AgentRole = 'researcher' | 'writer' | 'analyst' | 'designer' | 'developer' | 'reviewer' | 'custom';
 
 export type AgentStatus = 'idle' | 'working' | 'completed' | 'error';
