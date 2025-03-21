@@ -1,481 +1,298 @@
-import { Agent, AgentRole, Crew, Task, Flow } from './types';
 
+import { Agent, Crew, Task, Flow } from "@/lib/types";
+
+// Mock agents for development and demo
 export const mockAgents: Agent[] = [
   {
-    id: 'agent-1',
-    name: 'Research Specialist',
-    role: 'researcher',
-    description: 'Collects and analyzes information from various sources',
-    status: 'idle',
-    llm: 'gpt-4',
-    tools: ['web-search', 'document-analysis']
+    id: "agent-1",
+    name: "Data Analyst",
+    role: "analyst",
+    description: "Processes market data and identifies patterns",
+    status: "idle",
+    llm: "GPT-4",
+    tools: ["web-search", "data-analysis"]
   },
   {
-    id: 'agent-2',
-    name: 'Content Writer',
-    role: 'writer',
-    description: 'Creates engaging and informative content',
-    status: 'idle',
-    llm: 'gpt-4',
-    tools: ['text-generation']
+    id: "agent-2",
+    name: "Research Assistant",
+    role: "researcher",
+    description: "Gathers information from various sources",
+    status: "idle",
+    llm: "Claude-2",
+    tools: ["web-search", "document-reader"]
   },
   {
-    id: 'agent-3',
-    name: 'Data Analyst',
-    role: 'analyst',
-    description: 'Processes and interprets complex data sets',
-    status: 'idle',
-    llm: 'gpt-4',
-    tools: ['data-processing', 'visualization']
+    id: "agent-3",
+    name: "Content Writer",
+    role: "writer",
+    description: "Creates engaging marketing copy",
+    status: "working",
+    llm: "GPT-4",
+    tools: ["text-generation"]
   },
   {
-    id: 'agent-4',
-    name: 'Code Developer',
-    role: 'developer',
-    description: 'Writes and optimizes code in multiple languages',
-    status: 'idle',
-    llm: 'gpt-4',
-    tools: ['code-generation', 'debugging']
+    id: "agent-4",
+    name: "Content Reviewer",
+    role: "reviewer",
+    description: "Reviews and refines content",
+    status: "idle",
+    llm: "Claude-2",
+    tools: ["grammar-check", "tone-analysis"]
+  },
+  {
+    id: "agent-5",
+    name: "UI Designer",
+    role: "designer",
+    description: "Creates user interface mockups",
+    status: "completed",
+    llm: "GPT-4",
+    tools: ["image-generation", "wireframe-tools"]
+  },
+  {
+    id: "agent-6",
+    name: "Code Generator",
+    role: "developer",
+    description: "Implements designs in code",
+    status: "completed",
+    llm: "Claude-2",
+    tools: ["code-generation", "code-review"]
   }
 ];
 
+// Mock tasks for development and demo
 export const mockTasks: Task[] = [
   {
-    id: 'task-1',
-    description: 'Research market trends in AI adoption',
-    assignedTo: 'agent-1',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
+    id: "task-1",
+    description: "Research the latest trends in AI technology",
+    assignedTo: "agent-2",
+    status: "completed",
+    output: "Completed research on AI trends. Found that generative AI, multimodal models, and AI agents are the top trends for this year.",
+    createdAt: "2023-06-10T10:30:00Z",
+    completedAt: "2023-06-11T14:45:00Z"
   },
   {
-    id: 'task-2',
-    description: 'Write a blog post about recent AI advancements',
-    assignedTo: 'agent-2',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
+    id: "task-2",
+    description: "Analyze quarterly sales data and identify patterns",
+    assignedTo: "agent-1",
+    status: "in_progress",
+    createdAt: "2023-07-05T09:15:00Z"
   },
   {
-    id: 'task-3',
-    description: 'Analyze user engagement metrics from last month',
-    assignedTo: 'agent-3',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
+    id: "task-3",
+    description: "Write a blog post about the benefits of AI agents",
+    assignedTo: "agent-3",
+    status: "in_progress",
+    createdAt: "2023-07-10T11:20:00Z"
   },
   {
-    id: 'task-4',
-    description: 'Review content for technical accuracy',
-    assignedTo: 'agent-4',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
+    id: "task-4",
+    description: "Review and edit the AI agents blog post",
+    assignedTo: "agent-4",
+    status: "pending",
+    createdAt: "2023-07-10T11:25:00Z",
+    requiresApproval: true,
+    approver: "user-1"
   },
   {
-    id: 'task-5',
-    description: 'Review content for writing quality',
-    assignedTo: 'agent-2',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
+    id: "task-5",
+    description: "Design a landing page for the new product",
+    assignedTo: "agent-5",
+    status: "completed",
+    output: "Completed landing page design with 3 mockups and responsive layouts.",
+    createdAt: "2023-06-20T14:10:00Z",
+    completedAt: "2023-06-22T16:30:00Z"
   },
   {
-    id: 'task-6',
-    description: 'Generate final report',
-    assignedTo: 'agent-7',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
-  },
-  {
-    id: 'task-7',
-    description: 'Clean and prepare data for analysis',
-    assignedTo: 'agent-5',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
-  },
-  {
-    id: 'task-8',
-    description: 'Analyze key features',
-    assignedTo: 'agent-6',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
-  },
-  {
-    id: 'task-9',
-    description: 'Generate final report',
-    assignedTo: 'agent-7',
-    status: 'pending',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
+    id: "task-6",
+    description: "Implement the landing page design in React",
+    assignedTo: "agent-6",
+    status: "completed",
+    output: "Completed implementation of the landing page with React and Tailwind CSS.",
+    createdAt: "2023-06-23T09:45:00Z",
+    completedAt: "2023-06-25T17:20:00Z"
   }
 ];
 
+// Mock crews for development and demo
 export const mockCrews: Crew[] = [
   {
-    id: 'crew-1',
-    name: 'Content Creation Team',
-    description: 'Researches topics and creates engaging content',
-    agents: [mockAgents[0], mockAgents[1]],
-    tasks: [mockTasks[0], mockTasks[1]],
-    status: 'idle',
-    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-    lastRun: new Date(Date.now() - 2 * 86400000).toISOString(),
+    id: "crew-1",
+    name: "Research Team Alpha",
+    description: "Specialized in market research and trend analysis",
+    agents: [
+      mockAgents[0], // Data Analyst
+      mockAgents[1]  // Research Assistant
+    ],
+    tasks: [mockTasks[0].id, mockTasks[1].id],
+    status: "idle",
+    createdAt: "2023-05-10T14:30:00Z",
     config: {
       verbose: true,
       maxIterations: 5,
-      taskExecutionStrategy: 'sequential'
+      taskExecutionStrategy: "sequential"
     }
   },
   {
-    id: 'crew-2',
-    name: 'Data Analysis Crew',
-    description: 'Analyzes data and generates insights',
-    agents: [mockAgents[2]],
-    tasks: [mockTasks[2]],
-    status: 'completed',
-    createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
-    lastRun: new Date(Date.now() - 1 * 86400000).toISOString(),
+    id: "crew-2",
+    name: "Content Production",
+    description: "Creates and reviews content for marketing campaigns",
+    agents: [
+      mockAgents[2], // Content Writer
+      mockAgents[3]  // Content Reviewer
+    ],
+    tasks: [mockTasks[2].id, mockTasks[3].id],
+    status: "running",
+    createdAt: "2023-06-15T09:45:00Z",
+    lastRun: "2023-07-20T11:30:00Z",
+    config: {
+      verbose: true,
+      maxIterations: 3,
+      taskExecutionStrategy: "sequential"
+    }
+  },
+  {
+    id: "crew-3",
+    name: "Development Squad",
+    description: "Designs and implements software solutions",
+    agents: [
+      mockAgents[4], // UI Designer
+      mockAgents[5]  // Code Generator
+    ],
+    tasks: [mockTasks[4].id, mockTasks[5].id],
+    status: "completed",
+    createdAt: "2023-07-05T16:20:00Z",
+    lastRun: "2023-07-25T14:10:00Z",
     config: {
       verbose: false,
-      maxIterations: 3,
-      taskExecutionStrategy: 'sequential'
+      maxIterations: 10,
+      taskExecutionStrategy: "parallel"
     }
   }
 ];
 
+// Mock flows for development and demo
 export const mockFlows: Flow[] = [
   {
     id: "flow-1",
-    name: "Research and Content Creation",
-    description: "Automated workflow for researching a topic and creating content",
-    crewId: "crew-1",
-    nodes: [
-      {
-        id: "node-1",
-        type: "event",
-        label: "Start",
-        data: {
-          description: "Starting point of the workflow",
-        },
-        position: { x: 250, y: 5 },
-      },
-      {
-        id: "node-2",
-        type: "task",
-        label: "Research Task",
-        data: {
-          description: "Research the given topic thoroughly",
-          taskIds: ["task-1"],
-          agentId: "agent-1",
-        },
-        position: { x: 250, y: 100 },
-      },
-      {
-        id: "node-3",
-        type: "condition",
-        label: "Evaluation",
-        data: {
-          description: "Check if research is sufficient",
-          condition: "research.quality > 0.8",
-        },
-        position: { x: 250, y: 200 },
-      },
-      {
-        id: "node-4",
-        type: "task",
-        label: "Content Creation",
-        data: {
-          description: "Create content based on research",
-          taskIds: ["task-2"],
-          agentId: "agent-2",
-        },
-        position: { x: 400, y: 300 },
-      },
-      {
-        id: "node-5",
-        type: "task",
-        label: "Additional Research",
-        data: {
-          description: "Conduct additional research",
-          taskIds: ["task-3"],
-          agentId: "agent-1",
-        },
-        position: { x: 100, y: 300 },
-      },
-    ],
-    edges: [
-      {
-        id: "edge-1-2",
-        source: "node-1",
-        target: "node-2",
-        type: "default",
-      },
-      {
-        id: "edge-2-3",
-        source: "node-2",
-        target: "node-3",
-        type: "default",
-      },
-      {
-        id: "edge-3-4",
-        source: "node-3",
-        target: "node-4",
-        type: "conditional",
-        label: "If sufficient",
-        animated: true,
-      },
-      {
-        id: "edge-3-5",
-        source: "node-3",
-        target: "node-5",
-        type: "conditional",
-        label: "If insufficient",
-      },
-      {
-        id: "edge-5-2",
-        source: "node-5",
-        target: "node-2",
-        type: "default",
-      },
-    ],
-    createdAt: "2023-06-12T10:00:00Z",
-    updatedAt: "2023-06-15T14:30:00Z",
-    status: "idle",
-  },
-  {
-    id: "flow-2",
-    name: "Content Review Process",
-    description: "Workflow for reviewing and refining content",
-    crewId: "crew-1",
-    nodes: [
-      {
-        id: "node-1",
-        type: "event",
-        label: "Start",
-        data: {
-          description: "Content submission",
-        },
-        position: { x: 250, y: 5 },
-      },
-      {
-        id: "node-2",
-        type: "task",
-        label: "Initial Review",
-        data: {
-          description: "First pass review of content",
-          taskIds: ["task-4"],
-          agentId: "agent-3",
-        },
-        position: { x: 250, y: 100 },
-      },
-      {
-        id: "node-3",
-        type: "parallel",
-        label: "Parallel Reviews",
-        data: {
-          description: "Multiple specialists review simultaneously",
-        },
-        position: { x: 250, y: 200 },
-      },
-      {
-        id: "node-4",
-        type: "task",
-        label: "Technical Review",
-        data: {
-          description: "Review technical accuracy",
-          taskIds: ["task-5"],
-          agentId: "agent-4",
-        },
-        position: { x: 100, y: 300 },
-      },
-      {
-        id: "node-5",
-        type: "task",
-        label: "Editorial Review",
-        data: {
-          description: "Review writing quality",
-          taskIds: ["task-6"],
-          agentId: "agent-2",
-        },
-        position: { x: 400, y: 300 },
-      },
-      {
-        id: "node-6",
-        type: "condition",
-        label: "Approval Decision",
-        data: {
-          description: "Determine if content is approved",
-          condition: "reviews.all(score > 0.7)",
-        },
-        position: { x: 250, y: 400 },
-      },
-    ],
-    edges: [
-      {
-        id: "edge-1-2",
-        source: "node-1",
-        target: "node-2",
-        type: "default",
-      },
-      {
-        id: "edge-2-3",
-        source: "node-2",
-        target: "node-3",
-        type: "default",
-      },
-      {
-        id: "edge-3-4",
-        source: "node-3",
-        target: "node-4",
-        type: "default",
-      },
-      {
-        id: "edge-3-5",
-        source: "node-3",
-        target: "node-5",
-        type: "default",
-      },
-      {
-        id: "edge-4-6",
-        source: "node-4",
-        target: "node-6",
-        type: "default",
-      },
-      {
-        id: "edge-5-6",
-        source: "node-5",
-        target: "node-6",
-        type: "default",
-      },
-    ],
-    createdAt: "2023-07-05T09:15:00Z",
-    updatedAt: "2023-07-08T16:20:00Z",
-    status: "completed",
-    lastRun: "2023-07-10T11:30:00Z",
-  },
-  {
-    id: "flow-3",
-    name: "Data Analysis Pipeline",
-    description: "Automated data analysis workflow with iterative refinement",
+    name: "Content Marketing Pipeline",
+    description: "End-to-end workflow for creating and publishing marketing content",
     crewId: "crew-2",
     nodes: [
       {
         id: "node-1",
-        type: "event",
-        label: "Start",
+        type: "task",
+        label: "Research Topics",
         data: {
-          description: "Data collection",
+          description: "Research trending topics in our industry",
+          taskIds: ["task-1"],
+          agentId: "agent-2",
         },
-        position: { x: 250, y: 5 },
+        position: { x: 100, y: 100 },
       },
       {
         id: "node-2",
         type: "task",
-        label: "Data Preparation",
+        label: "Create Content",
         data: {
-          description: "Clean and prepare data for analysis",
-          taskIds: ["task-7"],
-          agentId: "agent-5",
+          description: "Write blog posts based on research",
+          taskIds: ["task-3"],
+          agentId: "agent-3",
         },
-        position: { x: 250, y: 100 },
+        position: { x: 300, y: 100 },
       },
       {
         id: "node-3",
-        type: "loop",
-        label: "Analysis Loop",
+        type: "human_approval",
+        label: "Review Content",
         data: {
-          description: "Iterative analysis process",
-          iterations: 3,
+          description: "Human review of the generated content",
+          requiresApproval: true,
+          approver: "user-1",
         },
-        position: { x: 250, y: 200 },
-      },
-      {
-        id: "node-4",
-        type: "task",
-        label: "Feature Analysis",
-        data: {
-          description: "Analyze key features",
-          taskIds: ["task-8"],
-          agentId: "agent-6",
-        },
-        position: { x: 250, y: 300 },
-      },
-      {
-        id: "node-5",
-        type: "task",
-        label: "Report Generation",
-        data: {
-          description: "Generate final report",
-          taskIds: ["task-9"],
-          agentId: "agent-7",
-        },
-        position: { x: 250, y: 400 },
-      },
+        position: { x: 500, y: 100 },
+      }
     ],
     edges: [
       {
-        id: "edge-1-2",
+        id: "edge-1",
         source: "node-1",
         target: "node-2",
-        type: "default",
+        type: "success",
       },
       {
-        id: "edge-2-3",
+        id: "edge-2",
         source: "node-2",
         target: "node-3",
-        type: "default",
-      },
-      {
-        id: "edge-3-4",
-        source: "node-3",
-        target: "node-4",
-        type: "default",
-      },
-      {
-        id: "edge-4-3",
-        source: "node-4",
-        target: "node-3",
-        type: "default",
-        animated: true,
-      },
-      {
-        id: "edge-3-5",
-        source: "node-3",
-        target: "node-5",
-        type: "default",
-      },
+        type: "success",
+      }
     ],
-    createdAt: "2023-08-20T13:45:00Z",
-    updatedAt: "2023-08-22T10:10:00Z",
-    status: "running",
-    lastRun: "2023-08-25T09:30:00Z",
+    createdAt: "2023-07-01T10:00:00Z",
+    status: "idle",
   },
-];
-
-// Available agent roles with their descriptions
-export const agentRoles: Record<AgentRole, string> = {
-  researcher: 'Gathers and analyzes information from various sources',
-  writer: 'Creates written content like articles, reports, and documentation',
-  analyst: 'Processes data and extracts meaningful insights',
-  designer: 'Creates visual designs and user interfaces',
-  developer: 'Writes and optimizes code across different languages',
-  reviewer: 'Evaluates and provides feedback on work',
-  custom: 'Custom role with specific capabilities'
-};
-
-// Available LLM options
-export const llmOptions = [
-  { value: 'gpt-4', label: 'GPT-4' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
-  { value: 'claude-3-opus', label: 'Claude 3 Opus' },
-  { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet' },
-  { value: 'llama-3', label: 'Llama 3' },
-  { value: 'custom', label: 'Custom Model' }
-];
-
-// Available tools
-export const toolOptions = [
-  { value: 'web-search', label: 'Web Search' },
-  { value: 'document-analysis', label: 'Document Analysis' },
-  { value: 'text-generation', label: 'Text Generation' },
-  { value: 'data-processing', label: 'Data Processing' },
-  { value: 'visualization', label: 'Data Visualization' },
-  { value: 'code-generation', label: 'Code Generation' },
-  { value: 'debugging', label: 'Debugging' },
-  { value: 'custom-tool', label: 'Custom Tool' }
+  {
+    id: "flow-2",
+    name: "Product Development Cycle",
+    description: "Workflow for designing and implementing new product features",
+    crewId: "crew-3",
+    nodes: [
+      {
+        id: "node-1",
+        type: "task",
+        label: "Design UI",
+        data: {
+          description: "Create mockups for new features",
+          taskIds: ["task-5"],
+          agentId: "agent-5",
+        },
+        position: { x: 100, y: 100 },
+      },
+      {
+        id: "node-2",
+        type: "condition",
+        label: "Design Approval",
+        data: {
+          description: "Check if designs are approved",
+          condition: "designApproved === true",
+        },
+        position: { x: 300, y: 100 },
+      },
+      {
+        id: "node-3",
+        type: "task",
+        label: "Implement Design",
+        data: {
+          description: "Code the approved designs",
+          taskIds: ["task-6"],
+          agentId: "agent-6",
+        },
+        position: { x: 500, y: 100 },
+      }
+    ],
+    edges: [
+      {
+        id: "edge-1",
+        source: "node-1",
+        target: "node-2",
+        type: "success",
+      },
+      {
+        id: "edge-2",
+        source: "node-2",
+        target: "node-3",
+        type: "success",
+        sourceHandle: "true",
+      },
+      {
+        id: "edge-3",
+        source: "node-2",
+        target: "node-1",
+        type: "failure",
+        sourceHandle: "false",
+        label: "Revise",
+      }
+    ],
+    createdAt: "2023-07-15T14:30:00Z",
+    lastRun: "2023-07-25T10:15:00Z",
+    status: "completed",
+  }
 ];

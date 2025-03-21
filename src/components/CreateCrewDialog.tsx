@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,304 +10,226 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { agentRoles, llmOptions, toolOptions } from "@/lib/data";
-import { Plus, X, UserPlus, Brain, Workflow } from "lucide-react";
+import { 
+  Form, 
+  FormControl, 
+  FormDescription, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Plus, X, Check } from "lucide-react";
+import { toast } from "sonner";
+import { Agent } from "@/lib/types";
+import { AgentService, CrewService } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
-const AgentSchema = z.object({
-  name: z.string().min(2, {
-    message: "Agent name must be at least 2 characters.",
-  }),
-  role: z.string(),
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
-  llm: z.string(),
-  tools: z.array(z.string()).min(1, {
-    message: "Select at least one tool.",
-  }),
+// Form validation schema
+const crewFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
+  agentIds: z.array(z.string()).min(1, { message: "Select at least one agent." }),
+  config: z.object({
+    verbose: z.boolean().default(true),
+    maxIterations: z.number().int().min(1).max(100),
+    taskExecutionStrategy: z.enum(["sequential", "parallel"])
+  })
 });
 
-const TaskSchema = z.object({
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
-  assignedTo: z.string().optional(),
-});
+type CrewFormValues = z.infer<typeof crewFormSchema>;
 
-const CrewSchema = z.object({
-  name: z.string().min(2, {
-    message: "Crew name must be at least 2 characters.",
-  }),
-  description: z.string().min(10, {
-    message: "Description must be at least 10 characters.",
-  }),
-  taskExecutionStrategy: z.enum(["sequential", "parallel"]),
-  maxIterations: z.coerce.number().int().min(1).max(100),
-  verbose: z.boolean().default(true),
-});
+interface CreateCrewDialogProps {
+  onCrewCreated?: () => void;
+}
 
-export default function CreateCrewDialog() {
+export default function CreateCrewDialog({ onCrewCreated }: CreateCrewDialogProps) {
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("crew");
-  const [agents, setAgents] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [selectedTools, setSelectedTools] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState(false);
   const { toast } = useToast();
-
-  const crewForm = useForm<z.infer<typeof CrewSchema>>({
-    resolver: zodResolver(CrewSchema),
+  
+  const form = useForm<CrewFormValues>({
+    resolver: zodResolver(crewFormSchema),
     defaultValues: {
       name: "",
       description: "",
-      taskExecutionStrategy: "sequential",
-      maxIterations: 5,
-      verbose: true,
+      agentIds: [],
+      config: {
+        verbose: true,
+        maxIterations: 5,
+        taskExecutionStrategy: "sequential"
+      }
     },
   });
 
-  const agentForm = useForm<z.infer<typeof AgentSchema>>({
-    resolver: zodResolver(AgentSchema),
-    defaultValues: {
-      name: "",
-      role: "researcher",
-      description: "",
-      llm: "gpt-4",
-      tools: [],
-    },
-  });
-
-  const taskForm = useForm<z.infer<typeof TaskSchema>>({
-    resolver: zodResolver(TaskSchema),
-    defaultValues: {
-      description: "",
-      assignedTo: "",
-    },
-  });
-
-  const handleAgentRoleChange = (value: string) => {
-    if (value in agentRoles) {
-      agentForm.setValue("description", agentRoles[value as keyof typeof agentRoles]);
+  useEffect(() => {
+    if (open) {
+      loadAgents();
     }
-  };
+  }, [open]);
 
-  const onSubmitAgent = (data: z.infer<typeof AgentSchema>) => {
-    setAgents([...agents, { ...data, id: `agent-${Date.now()}` }]);
-    setSelectedTools([]);
-    agentForm.reset();
-  };
-
-  const onSubmitTask = (data: z.infer<typeof TaskSchema>) => {
-    setTasks([...tasks, { ...data, id: `task-${Date.now()}` }]);
-    taskForm.reset();
-  };
-
-  const onSubmitCrew = (data: z.infer<typeof CrewSchema>) => {
-    if (agents.length === 0) {
+  const loadAgents = async () => {
+    try {
+      setLoadingAgents(true);
+      const loadedAgents = await AgentService.getAgents();
+      setAgents(loadedAgents);
+    } catch (error) {
+      console.error("Failed to load agents:", error);
       toast({
-        title: "Cannot create crew",
-        description: "Add at least one agent to your crew.",
+        title: "Error",
+        description: "Failed to load available agents.",
         variant: "destructive",
       });
-      setActiveTab("agents");
-      return;
-    }
-
-    const newCrew = {
-      ...data,
-      agents,
-      tasks,
-      id: `crew-${Date.now()}`,
-      status: "idle",
-      createdAt: new Date().toISOString(),
-      config: {
-        verbose: data.verbose,
-        maxIterations: data.maxIterations,
-        taskExecutionStrategy: data.taskExecutionStrategy,
-      },
-    };
-
-    toast({
-      title: "Crew created successfully",
-      description: `${data.name} crew is ready to run.`,
-    });
-
-    console.log("New crew created:", newCrew);
-    setOpen(false);
-    resetForms();
-  };
-
-  const resetForms = () => {
-    crewForm.reset();
-    agentForm.reset();
-    taskForm.reset();
-    setAgents([]);
-    setTasks([]);
-    setSelectedTools([]);
-    setActiveTab("crew");
-  };
-
-  const addTool = (tool: string) => {
-    const currentTools = agentForm.getValues("tools") || [];
-    if (!currentTools.includes(tool)) {
-      setSelectedTools([...currentTools, tool]);
-      agentForm.setValue("tools", [...currentTools, tool]);
+    } finally {
+      setLoadingAgents(false);
     }
   };
 
-  const removeTool = (tool: string) => {
-    const currentTools = agentForm.getValues("tools") || [];
-    const updatedTools = currentTools.filter((t) => t !== tool);
-    setSelectedTools(updatedTools);
-    agentForm.setValue("tools", updatedTools);
+  const onSubmit = async (values: CrewFormValues) => {
+    setLoading(true);
+    try {
+      const crewData = {
+        name: values.name,
+        description: values.description,
+        agents: agents.filter(a => values.agentIds.includes(a.id)),
+        tasks: [],
+        config: {
+          verbose: values.config.verbose,
+          maxIterations: values.config.maxIterations,
+          taskExecutionStrategy: values.config.taskExecutionStrategy
+        }
+      };
+      
+      await CrewService.createCrew(crewData);
+      setOpen(false);
+      form.reset();
+      toast({
+        title: "Crew created",
+        description: "The crew has been successfully created.",
+      });
+      
+      if (onCrewCreated) onCrewCreated();
+    } catch (error) {
+      console.error("Failed to create crew:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create crew. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const removeAgent = (id: string) => {
-    setAgents(agents.filter((agent) => agent.id !== id));
-    setTasks(
-      tasks.map((task) =>
-        task.assignedTo === id ? { ...task, assignedTo: "" } : task
-      )
-    );
-  };
-
-  const removeTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
+  const toggleAgentSelection = (agentId: string) => {
+    const currentAgentIds = form.getValues("agentIds");
+    if (currentAgentIds.includes(agentId)) {
+      form.setValue(
+        "agentIds",
+        currentAgentIds.filter((id) => id !== agentId)
+      );
+    } else {
+      form.setValue("agentIds", [...currentAgentIds, agentId]);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      setOpen(isOpen);
-      if (!isOpen) resetForms();
-    }}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2" data-testid="create-crew-button">
-          <Plus className="h-4 w-4" />
+        <Button data-testid="create-crew-button">
+          <Plus className="mr-2 h-4 w-4" />
           Create Crew
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-[700px]">
         <DialogHeader>
-          <DialogTitle>Create a New Crew</DialogTitle>
+          <DialogTitle>Create New Crew</DialogTitle>
           <DialogDescription>
-            Configure your crew with agents and tasks to automate workflows.
+            Create a new crew of AI agents to work together on tasks.
           </DialogDescription>
         </DialogHeader>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4 flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid grid-cols-3">
-            <TabsTrigger value="crew" className="flex items-center gap-1">
-              <Brain className="h-4 w-4" />
-              Crew Details
-            </TabsTrigger>
-            <TabsTrigger value="agents" className="flex items-center gap-1">
-              <UserPlus className="h-4 w-4" />
-              Agents
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-1">
-              <Workflow className="h-4 w-4" />
-              Tasks
-            </TabsTrigger>
-          </TabsList>
-
-          <ScrollArea className="flex-1 mt-4">
-            <TabsContent value="crew" className="p-1">
-              <Form {...crewForm}>
-                <form className="space-y-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Crew Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Research Team" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Describe the purpose of this crew..." 
+                          className="h-20"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="space-y-3">
+                  <FormLabel>Configuration</FormLabel>
+                  
                   <FormField
-                    control={crewForm.control}
-                    name="name"
+                    control={form.control}
+                    name="config.verbose"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Crew Name</FormLabel>
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-2">
                         <FormControl>
-                          <Input placeholder="e.g. Content Creation Team" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          A descriptive name for your crew and its purpose.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={crewForm.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Describe what this crew does..."
-                            {...field}
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Detailed description of the crew's purpose and capabilities.
-                        </FormDescription>
-                        <FormMessage />
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Verbose Mode</FormLabel>
+                          <FormDescription>
+                            Enable detailed logging of crew operations
+                          </FormDescription>
+                        </div>
                       </FormItem>
                     )}
                   />
-
+                  
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
-                      control={crewForm.control}
-                      name="taskExecutionStrategy"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Execution Strategy</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a strategy" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="sequential">Sequential</SelectItem>
-                              <SelectItem value="parallel">Parallel</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            How tasks will be executed by the crew.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={crewForm.control}
-                      name="maxIterations"
+                      control={form.control}
+                      name="config.maxIterations"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Max Iterations</FormLabel>
@@ -316,306 +239,129 @@ export default function CreateCrewDialog() {
                               min={1}
                               max={100}
                               {...field}
+                              onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                             />
                           </FormControl>
                           <FormDescription>
-                            Maximum number of iterations for the crew.
+                            Maximum number of iterations
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                  </div>
-                </form>
-              </Form>
-            </TabsContent>
-
-            <TabsContent value="agents" className="space-y-6 p-1">
-              <div className="space-y-6">
-                {agents.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Added Agents</h3>
-                    <div className="space-y-2">
-                      {agents.map((agent) => (
-                        <div
-                          key={agent.id}
-                          className="flex items-center justify-between p-3 border rounded-md subtle-border"
-                        >
-                          <div>
-                            <div className="font-medium">{agent.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {agent.description}
-                            </div>
-                            <div className="flex items-center mt-1 space-x-2">
-                              <Badge variant="outline" className="text-xs capitalize">
-                                {agent.role}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {agent.llm}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-full"
-                            onClick={() => removeAgent(agent.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                    <Separator />
-                  </div>
-                )}
-
-                <Form {...agentForm}>
-                  <form onSubmit={agentForm.handleSubmit(onSubmitAgent)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={agentForm.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Agent Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="e.g. Research Specialist" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={agentForm.control}
-                        name="role"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Role</FormLabel>
-                            <Select
-                              onValueChange={(value) => {
-                                field.onChange(value);
-                                handleAgentRoleChange(value);
-                              }}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a role" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {Object.keys(agentRoles).map((role) => (
-                                  <SelectItem key={role} value={role}>
-                                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
+                    
                     <FormField
-                      control={agentForm.control}
-                      name="description"
+                      control={form.control}
+                      name="config.taskExecutionStrategy"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Describe this agent's capabilities..."
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={agentForm.control}
-                      name="llm"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Language Model</FormLabel>
+                          <FormLabel>Execution Strategy</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select LLM" />
+                                <SelectValue placeholder="Select strategy" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {llmOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
+                              <SelectItem value="sequential">Sequential</SelectItem>
+                              <SelectItem value="parallel">Parallel</SelectItem>
                             </SelectContent>
                           </Select>
+                          <FormDescription>
+                            How tasks are executed
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
-                    <FormField
-                      control={agentForm.control}
-                      name="tools"
-                      render={() => (
-                        <FormItem>
-                          <FormLabel>Tools</FormLabel>
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap gap-2">
-                              {toolOptions.map((tool) => (
-                                <Badge
-                                  key={tool.value}
-                                  variant={
-                                    selectedTools.includes(tool.value) ? "default" : "outline"
-                                  }
-                                  className="cursor-pointer"
-                                  onClick={() => {
-                                    if (selectedTools.includes(tool.value)) {
-                                      removeTool(tool.value);
-                                    } else {
-                                      addTool(tool.value);
-                                    }
-                                  }}
-                                >
-                                  {tool.label}
-                                  {selectedTools.includes(tool.value) && (
-                                    <X className="ml-1 h-3 w-3" />
-                                  )}
-                                </Badge>
-                              ))}
-                            </div>
-                            <FormMessage />
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button type="submit" className="w-full">
-                      Add Agent
-                    </Button>
-                  </form>
-                </Form>
+                  </div>
+                </div>
               </div>
-            </TabsContent>
-
-            <TabsContent value="tasks" className="space-y-6 p-1">
-              <div className="space-y-6">
-                {tasks.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Added Tasks</h3>
-                    <div className="space-y-2">
-                      {tasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className="flex items-center justify-between p-3 border rounded-md subtle-border"
+              
+              <FormField
+                control={form.control}
+                name="agentIds"
+                render={() => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Select Agents</FormLabel>
+                    <FormDescription>
+                      Choose agents to include in this crew
+                    </FormDescription>
+                    <FormMessage />
+                    
+                    {loadingAgents ? (
+                      <div className="flex items-center justify-center h-[300px] border rounded-md p-2">
+                        <p className="text-muted-foreground">Loading agents...</p>
+                      </div>
+                    ) : agents.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-[300px] border rounded-md p-4">
+                        <p className="text-muted-foreground mb-4">No agents available</p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setOpen(false)}
                         >
-                          <div>
-                            <div className="font-medium">{task.description}</div>
-                            {task.assignedTo && (
-                              <div className="text-sm text-muted-foreground">
-                                Assigned to:{" "}
-                                {agents.find((a) => a.id === task.assignedTo)
-                                  ?.name || "Unknown Agent"}
+                          Create Agents First
+                        </Button>
+                      </div>
+                    ) : (
+                      <ScrollArea className="h-[300px] border rounded-md p-2">
+                        <div className="space-y-2">
+                          {agents.map((agent) => {
+                            const isSelected = form.watch("agentIds").includes(agent.id);
+                            return (
+                              <div
+                                key={agent.id}
+                                className={`flex items-start space-x-3 p-3 rounded-md cursor-pointer hover:bg-muted transition-colors ${
+                                  isSelected ? "bg-muted" : ""
+                                }`}
+                                onClick={() => toggleAgentSelection(agent.id)}
+                              >
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+                                  isSelected 
+                                    ? "bg-primary border-primary text-primary-foreground" 
+                                    : "border-input"
+                                }`}>
+                                  {isSelected && <Check className="h-3 w-3" />}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-medium">{agent.name}</div>
+                                  <div className="text-sm text-muted-foreground line-clamp-2">
+                                    {agent.description}
+                                  </div>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    <Badge variant="outline" className="text-xs">
+                                      {agent.role}
+                                    </Badge>
+                                    <Badge variant="outline" className="text-xs">
+                                      {agent.llm}
+                                    </Badge>
+                                  </div>
+                                </div>
                               </div>
-                            )}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-full"
-                            onClick={() => removeTask(task.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                            );
+                          })}
                         </div>
-                      ))}
-                    </div>
-                    <Separator />
-                  </div>
+                      </ScrollArea>
+                    )}
+                  </FormItem>
                 )}
-
-                <Form {...taskForm}>
-                  <form
-                    onSubmit={taskForm.handleSubmit(onSubmitTask)}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={taskForm.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Task Description</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Describe what needs to be done..."
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={taskForm.control}
-                      name="assignedTo"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Assign To (Optional)</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select an agent" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {agents.map((agent) => (
-                                <SelectItem key={agent.id} value={agent.id}>
-                                  {agent.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            You can leave this empty to assign tasks later or let CrewAI
-                            decide.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <Button type="submit" className="w-full">
-                      Add Task
-                    </Button>
-                  </form>
-                </Form>
-              </div>
-            </TabsContent>
-          </ScrollArea>
-        </Tabs>
-
-        <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={crewForm.handleSubmit(onSubmitCrew)}>
-            Create Crew
-          </Button>
-        </DialogFooter>
+              />
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading || loadingAgents}>
+                {loading ? "Creating..." : "Create Crew"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
