@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import CreateCrewDialog from "@/components/CreateCrewDialog";
 import CrewFilter from "@/components/crew/CrewFilter";
 import CrewList from "@/components/crew/CrewList";
-import { Crew } from "@/lib/types";
+import { Crew, CrewStatus } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { getStatusColorClass, filterCrews } from "@/utils/crewUtils";
 
