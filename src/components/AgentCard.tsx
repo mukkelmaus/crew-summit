@@ -1,4 +1,3 @@
-
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +17,7 @@ import {
 interface AgentCardProps {
   agent: Agent;
   compact?: boolean;
+  onDelete?: () => void;
 }
 
 const getRoleIcon = (role: Agent['role']) => {
@@ -69,7 +69,7 @@ const getStatusClass = (status: Agent['status']) => {
   }
 };
 
-export default function AgentCard({ agent, compact = false }: AgentCardProps) {
+export default function AgentCard({ agent, compact = false, onDelete }: AgentCardProps) {
   const avatarLetters = agent.name
     .split(' ')
     .map(word => word[0])
