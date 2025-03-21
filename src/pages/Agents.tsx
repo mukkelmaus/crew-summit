@@ -4,7 +4,7 @@ import { PlusCircle, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AgentCard } from "@/components/AgentCard";
+import AgentCard from "@/components/AgentCard";
 import { CreateAgentDialog } from "@/components/CreateAgentDialog";
 import { Agent, AgentRole } from "@/lib/types";
 import { AgentService } from "@/services/api";

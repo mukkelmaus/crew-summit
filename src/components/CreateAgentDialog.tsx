@@ -101,7 +101,17 @@ export function CreateAgentDialog({ onAgentCreated }: CreateAgentDialogProps) {
   const onSubmit = async (values: AgentFormValues) => {
     setLoading(true);
     try {
-      await AgentService.createAgent(values);
+      // Ensure all required fields are present
+      const agentData = {
+        name: values.name,
+        role: values.role,
+        description: values.description,
+        llm: values.llm,
+        tools: values.tools,
+        memory: values.memory
+      };
+      
+      await AgentService.createAgent(agentData);
       setOpen(false);
       form.reset();
       toast.success("Agent created successfully");

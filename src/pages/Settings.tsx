@@ -1,7 +1,8 @@
+
 import React from "react";
-import { Header } from "@/components/Header";
+import Header from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AIProviderSettings } from "@/components/AIProviderSettings";
+import AIProviderSettings from "@/components/AIProviderSettings";
 import { DatabaseConfigPanel } from "@/components/DatabaseConfigPanel";
 import { CrewAIStatus } from "@/components/CrewAIStatus";
 

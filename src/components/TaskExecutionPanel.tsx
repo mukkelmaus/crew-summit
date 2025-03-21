@@ -181,7 +181,7 @@ export function TaskExecutionPanel({ taskId }: TaskExecutionPanelProps) {
       case "in_progress":
         return <Badge variant="secondary"><Play className="h-3 w-3 mr-1" /> In Progress</Badge>;
       case "completed":
-        return <Badge variant="success"><CheckCircle className="h-3 w-3 mr-1" /> Completed</Badge>;
+        return <Badge variant="default" className="bg-green-500 hover:bg-green-600"><CheckCircle className="h-3 w-3 mr-1" /> Completed</Badge>;
       case "failed":
         return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" /> Failed</Badge>;
       case "awaiting_approval":

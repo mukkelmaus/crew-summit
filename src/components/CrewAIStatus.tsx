@@ -43,7 +43,7 @@ export function CrewAIStatus() {
         <CardTitle className="flex items-center gap-2">
           CrewAI Integration
           {status?.connected ? (
-            <Badge variant="success" className="ml-2">
+            <Badge variant="default" className="bg-green-500 hover:bg-green-600 ml-2">
               <CheckCircle className="h-3 w-3 mr-1" /> Connected
             </Badge>
           ) : (

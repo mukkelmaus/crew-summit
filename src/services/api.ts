@@ -1,5 +1,5 @@
-
 import { Agent, Crew, Task, Flow } from "@/lib/types";
+import { mockAgents, mockTasks, mockCrews, mockFlows } from "@/lib/data";
 
 // Base API configuration
 const API_BASE_URL = "/api/v1";
@@ -28,9 +28,7 @@ export const AgentService = {
   // Get all agents
   async getAgents(): Promise<Agent[]> {
     if (USE_MOCK_API) {
-      // Use mock data from lib/data for now
-      const { agents } = await import("@/lib/data");
-      return mockResponse(agents);
+      return mockResponse(mockAgents);
     }
 
     try {
@@ -45,8 +43,7 @@ export const AgentService = {
   // Get agent by ID
   async getAgent(id: string): Promise<Agent> {
     if (USE_MOCK_API) {
-      const { agents } = await import("@/lib/data");
-      const agent = agents.find((a) => a.id === id);
+      const agent = mockAgents.find((a) => a.id === id);
       if (!agent) throw new Error(`Agent not found: ${id}`);
       return mockResponse(agent);
     }
@@ -88,8 +85,7 @@ export const AgentService = {
   // Update existing agent
   async updateAgent(id: string, agentData: Partial<Agent>): Promise<Agent> {
     if (USE_MOCK_API) {
-      const { agents } = await import("@/lib/data");
-      const agent = agents.find((a) => a.id === id);
+      const agent = mockAgents.find((a) => a.id === id);
       if (!agent) throw new Error(`Agent not found: ${id}`);
       const updatedAgent = { ...agent, ...agentData };
       return mockResponse(updatedAgent);
@@ -130,8 +126,7 @@ export const CrewService = {
   // Get all crews
   async getCrews(): Promise<Crew[]> {
     if (USE_MOCK_API) {
-      const { crews } = await import("@/lib/data");
-      return mockResponse(crews);
+      return mockResponse(mockCrews);
     }
 
     try {
@@ -146,8 +141,7 @@ export const CrewService = {
   // Get crew by ID
   async getCrew(id: string): Promise<Crew> {
     if (USE_MOCK_API) {
-      const { crews } = await import("@/lib/data");
-      const crew = crews.find((c) => c.id === id);
+      const crew = mockCrews.find((c) => c.id === id);
       if (!crew) throw new Error(`Crew not found: ${id}`);
       return mockResponse(crew);
     }
@@ -190,8 +184,7 @@ export const CrewService = {
   // Update existing crew
   async updateCrew(id: string, crewData: Partial<Crew>): Promise<Crew> {
     if (USE_MOCK_API) {
-      const { crews } = await import("@/lib/data");
-      const crew = crews.find((c) => c.id === id);
+      const crew = mockCrews.find((c) => c.id === id);
       if (!crew) throw new Error(`Crew not found: ${id}`);
       const updatedCrew = { ...crew, ...crewData };
       return mockResponse(updatedCrew);
@@ -252,8 +245,7 @@ export const TaskService = {
   // Get all tasks
   async getTasks(): Promise<Task[]> {
     if (USE_MOCK_API) {
-      const { tasks } = await import("@/lib/data");
-      return mockResponse(tasks);
+      return mockResponse(mockTasks);
     }
 
     try {
@@ -268,8 +260,7 @@ export const TaskService = {
   // Get task by ID
   async getTask(id: string): Promise<Task> {
     if (USE_MOCK_API) {
-      const { tasks } = await import("@/lib/data");
-      const task = tasks.find((t) => t.id === id);
+      const task = mockTasks.find((t) => t.id === id);
       if (!task) throw new Error(`Task not found: ${id}`);
       return mockResponse(task);
     }
@@ -312,8 +303,7 @@ export const TaskService = {
   // Update existing task
   async updateTask(id: string, taskData: Partial<Task>): Promise<Task> {
     if (USE_MOCK_API) {
-      const { tasks } = await import("@/lib/data");
-      const task = tasks.find((t) => t.id === id);
+      const task = mockTasks.find((t) => t.id === id);
       if (!task) throw new Error(`Task not found: ${id}`);
       const updatedTask = { ...task, ...taskData };
       return mockResponse(updatedTask);
@@ -354,8 +344,7 @@ export const FlowService = {
   // Get all flows
   async getFlows(): Promise<Flow[]> {
     if (USE_MOCK_API) {
-      const { flows } = await import("@/lib/data");
-      return mockResponse(flows || []);
+      return mockResponse(mockFlows || []);
     }
 
     try {

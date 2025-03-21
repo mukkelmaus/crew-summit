@@ -1,9 +1,9 @@
 
 import React from "react";
-import { Header } from "@/components/Header";
+import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { CreateAgentDialog } from "@/components/CreateAgentDialog";
-import { CreateCrewDialog } from "@/components/CreateCrewDialog";
+import CreateAgentDialog from "@/components/CreateAgentDialog";
+import CreateCrewDialog from "@/components/CreateCrewDialog";
 import { TaskExecutionPanel } from "@/components/TaskExecutionPanel";
 import { CrewAIStatus } from "@/components/CrewAIStatus";
 import { useNavigate } from "react-router-dom";
