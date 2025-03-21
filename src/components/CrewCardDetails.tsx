@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Crew, CrewStatus } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
