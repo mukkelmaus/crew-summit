@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -237,7 +236,6 @@ export default function Crews() {
                 </Badge>
                 <CrewCard
                   crew={crew}
-                  onDelete={() => handleDeleteCrew(crew.id)}
                 />
               </div>
             ))}
