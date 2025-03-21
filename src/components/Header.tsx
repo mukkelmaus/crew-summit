@@ -51,11 +51,21 @@ export default function Header() {
             <Home className="h-4 w-4" />
             <span>Dashboard</span>
           </Button>
-          <Button variant="ghost" size="sm" className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center gap-2"
+            onClick={() => navigate('/crews')}
+          >
             <Users className="h-4 w-4" />
             <span>Crews</span>
           </Button>
-          <Button variant="ghost" size="sm" className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center gap-2"
+            onClick={() => navigate('/agents')}
+          >
             <User className="h-4 w-4" />
             <span>Agents</span>
           </Button>
