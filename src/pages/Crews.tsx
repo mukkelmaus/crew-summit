@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -248,12 +249,15 @@ export default function Crews() {
               "Try adjusting your search or filter criteria." : 
               "Get started by creating your first crew of AI agents."}
             action={
-              <CreateCrewDialog>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Crew
-                </Button>
-              </CreateCrewDialog>
+              <Button onClick={() => {
+                const createCrewButton = document.querySelector('[data-testid="create-crew-button"]');
+                if (createCrewButton instanceof HTMLElement) {
+                  createCrewButton.click();
+                }
+              }}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Crew
+              </Button>
             }
           />
         )}
