@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -189,7 +188,6 @@ export default function CreateCrewDialog() {
 
   const removeAgent = (id: string) => {
     setAgents(agents.filter((agent) => agent.id !== id));
-    // Also update tasks that were assigned to this agent
     setTasks(
       tasks.map((task) =>
         task.assignedTo === id ? { ...task, assignedTo: "" } : task
@@ -207,7 +205,7 @@ export default function CreateCrewDialog() {
       if (!isOpen) resetForms();
     }}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2" data-testid="create-crew-button">
           <Plus className="h-4 w-4" />
           Create Crew
         </Button>

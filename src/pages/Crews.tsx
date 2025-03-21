@@ -1,29 +1,12 @@
-
 import React, { useState } from "react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import CrewCard from "@/components/CrewCard";
 import CreateCrewDialog from "@/components/CreateCrewDialog";
-import { EmptyState } from "@/components/ui/empty-state";
-import { 
-  Search, 
-  Plus, 
-  Filter, 
-  AlertCircle, 
-  Users, 
-  Loader2 
-} from "lucide-react";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Crew, CrewStatus } from "@/lib/types";
+import CrewFilter from "@/components/crew/CrewFilter";
+import CrewList from "@/components/crew/CrewList";
+import { Crew } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
+import { getStatusColorClass, filterCrews } from "@/utils/crewUtils";
 
 const mockCrews: Crew[] = [
   {
@@ -137,14 +120,7 @@ export default function Crews() {
   const { toast } = useToast();
 
   // Filter crews based on search query and status filter
-  const filteredCrews = crews.filter(crew => {
-    const matchesSearch = crew.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          crew.description.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = statusFilter === "all" || crew.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredCrews = filterCrews(crews, searchQuery, statusFilter);
 
   const handleDeleteCrew = async (crewId: string) => {
     try {
@@ -192,75 +168,21 @@ export default function Crews() {
           <CreateCrewDialog />
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search crews..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Select
-            value={statusFilter}
-            onValueChange={setStatusFilter}
-          >
-            <SelectTrigger className="w-full md:w-[180px]">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter by status" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="idle">Idle</SelectItem>
-              <SelectItem value="running">Running</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="error">Error</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <CrewFilter
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+        />
 
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : filteredCrews.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCrews.map(crew => (
-              <div key={crew.id} className="relative group">
-                <Badge 
-                  className={`absolute top-2 right-2 z-10 ${getStatusColorClass(crew.status)}`}
-                >
-                  {crew.status.charAt(0).toUpperCase() + crew.status.slice(1)}
-                </Badge>
-                <CrewCard
-                  crew={crew}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={<Users className="h-12 w-12" />}
-            title="No crews found"
-            description={searchQuery || statusFilter !== "all" ? 
-              "Try adjusting your search or filter criteria." : 
-              "Get started by creating your first crew of AI agents."}
-            action={
-              <Button onClick={() => {
-                const createCrewButton = document.querySelector('[data-testid="create-crew-button"]');
-                if (createCrewButton instanceof HTMLElement) {
-                  createCrewButton.click();
-                }
-              }}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Crew
-              </Button>
-            }
-          />
-        )}
+        <CrewList
+          crews={crews}
+          filteredCrews={filteredCrews}
+          isLoading={isLoading}
+          searchQuery={searchQuery}
+          statusFilter={statusFilter}
+          getStatusColorClass={getStatusColorClass}
+        />
       </main>
     </div>
   );
