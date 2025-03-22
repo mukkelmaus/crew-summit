@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect, ReactNode } from 'react';
 import {
   ReactFlow,
@@ -405,11 +406,11 @@ export default function FlowEditor({
   };
 
   const filteredNodes = nodes.filter(node => {
-    const labelString = node.data?.label ? reactNodeToString(node.data.label as ReactNode) : '';
+    const labelString = node.data?.label ? reactNodeToString(node.data.label) : '';
     const descriptionString = node.data?.description 
       ? typeof node.data.description === 'string' 
         ? node.data.description 
-        : reactNodeToString(node.data.description as ReactNode)
+        : reactNodeToString(node.data.description)
       : '';
     
     return (
@@ -780,7 +781,7 @@ export default function FlowEditor({
                   
                   const nodeDescription = typeof node.data?.description === 'string' 
                     ? node.data.description 
-                    : reactNodeToString(node.data?.description as ReactNode);
+                    : reactNodeToString(node.data?.description || '');
                   
                   return (
                     <div key={nodeId} className="flex items-center justify-between gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
