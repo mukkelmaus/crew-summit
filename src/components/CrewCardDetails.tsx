@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Crew, CrewStatus } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,9 @@ export default function CrewCardDetails({ crew, onRunCrew }: CrewCardDetailsProp
     }
   };
 
+  // Cast the status to CrewStatus to ensure type safety
+  const status: CrewStatus = crew.status;
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-4">
@@ -53,10 +57,10 @@ export default function CrewCardDetails({ crew, onRunCrew }: CrewCardDetailsProp
             <CardTitle className="text-2xl">{crew.name}</CardTitle>
             <CardDescription className="mt-1">{crew.description}</CardDescription>
           </div>
-          <Badge className={getStatusColorClass(crew.status)}>
+          <Badge className={getStatusColorClass(status)}>
             <span className="flex items-center gap-1">
-              {getStatusIcon(crew.status)}
-              {crew.status.charAt(0).toUpperCase() + crew.status.slice(1)}
+              {getStatusIcon(status)}
+              {status.charAt(0).toUpperCase() + status.slice(1)}
             </span>
           </Badge>
         </div>
@@ -148,17 +152,17 @@ export default function CrewCardDetails({ crew, onRunCrew }: CrewCardDetailsProp
         </Button>
         
         <div className="flex gap-2">
-          {crew.status !== 'running' && (
+          {status !== 'running' && (
             <Button
               onClick={() => onRunCrew && onRunCrew(crew.id)}
-              disabled={crew.status === 'running'}
+              disabled={status === 'running'}
             >
               <Play className="h-4 w-4 mr-2" />
               Run Crew
             </Button>
           )}
           
-          {crew.status === 'running' && (
+          {status === 'running' && (
             <Button disabled>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Running
