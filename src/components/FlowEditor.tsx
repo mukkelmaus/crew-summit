@@ -26,7 +26,8 @@ import {
   flowNodesToReactFlowNodes,
   reactFlowNodesToFlowNodes,
   flowEdgesToReactFlowEdges,
-  reactFlowEdgesToFlowEdges
+  reactFlowEdgesToFlowEdges,
+  reactNodeToString
 } from '@/lib/flowTypeUtils';
 import { Button } from './ui/button';
 import { 
@@ -102,7 +103,6 @@ export default function FlowEditor({
   onRun,
   readOnly = false
 }: FlowEditorProps) {
-  // Convert Flow nodes/edges to ReactFlow nodes/edges for initial state
   const initialNodes = flowNodesToReactFlowNodes(flow.nodes);
   const initialEdges = flowEdgesToReactFlowEdges(flow.edges);
 
@@ -117,18 +117,15 @@ export default function FlowEditor({
   const reactFlowInstance = useReactFlow();
   const { toast } = useToast();
   
-  // For human intervention tracking
   const [pendingApprovals, setPendingApprovals] = useState<string[]>(
     flow.humanInterventionPoints?.filter(p => p.status === 'pending').map(p => p.nodeId) || []
   );
 
-  // Keyboard shortcuts
   const deleteKeyPressed = useKeyPress('Delete');
   const ctrlSPressed = useKeyPress(['Control', 's']);
   const ctrlZPressed = useKeyPress(['Control', 'z']);
   const ctrlYPressed = useKeyPress(['Control', 'y']);
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     if (deleteKeyPressed && selectedNode && !readOnly) {
       deleteSelectedNode();
@@ -153,10 +150,8 @@ export default function FlowEditor({
     }
   }, [ctrlYPressed]);
 
-  // Save current state to history
   const saveToHistory = useCallback(() => {
     if (historyIndex < history.length - 1) {
-      // If we're in the middle of the history, truncate it
       setHistory(history.slice(0, historyIndex + 1));
     }
     
@@ -164,7 +159,6 @@ export default function FlowEditor({
     setHistoryIndex(prev => prev + 1);
   }, [nodes, edges, history, historyIndex]);
 
-  // Save history when nodes or edges change
   useEffect(() => {
     if (nodes.length > 0 || edges.length > 0) {
       saveToHistory();
@@ -193,7 +187,6 @@ export default function FlowEditor({
     const sourceNode = nodes.find(node => node.id === params.source);
     let edgeType = 'default';
     
-    // Set edge type based on source node and handle
     if (sourceNode?.type === 'condition') {
       edgeType = params.sourceHandle === 'true' ? 'success' : 'failure';
     } else if (sourceNode?.type === 'human_approval') {
@@ -215,13 +208,11 @@ export default function FlowEditor({
       }
     }, eds));
     
-    // Save to history
     saveToHistory();
   }, [nodes, setEdges, saveToHistory]);
 
   const handleSave = () => {
     if (onSave) {
-      // Convert ReactFlow nodes/edges back to Flow nodes/edges for saving
       const flowNodes = reactFlowNodesToFlowNodes(nodes);
       const flowEdges = reactFlowEdgesToFlowEdges(edges);
       
@@ -239,7 +230,6 @@ export default function FlowEditor({
   };
 
   const handleRun = () => {
-    // Check if the flow has human approval nodes that are pending
     const hasHumanApprovalNodes = nodes.some(node => 
       node.type === 'human_approval' && pendingApprovals.includes(node.id)
     );
@@ -254,7 +244,6 @@ export default function FlowEditor({
     }
 
     if (onRun) {
-      // Convert ReactFlow nodes/edges back to Flow nodes/edges for running
       const flowNodes = reactFlowNodesToFlowNodes(nodes);
       const flowEdges = reactFlowEdgesToFlowEdges(edges);
       
@@ -280,7 +269,6 @@ export default function FlowEditor({
         y: reactFlowWrapper.current ? reactFlowWrapper.current.clientHeight / 2 : 300,
       });
       
-      // Create a new node of the specified type
       const newNode: FlowNodeType = {
         id: `node-${uuidv4()}`,
         type,
@@ -294,11 +282,9 @@ export default function FlowEditor({
         },
       };
       
-      // Convert and add to the ReactFlow nodes
       const reactFlowNode = flowNodesToReactFlowNodes([newNode])[0];
       setNodes((nds) => [...nds, reactFlowNode]);
       
-      // Save to history
       saveToHistory();
       
       toast({
@@ -314,16 +300,13 @@ export default function FlowEditor({
   
   const deleteSelectedNode = () => {
     if (selectedNode) {
-      // Remove all connected edges
       setEdges(edges.filter(edge => 
         edge.source !== selectedNode.id && edge.target !== selectedNode.id
       ));
       
-      // Remove the node
       setNodes(nodes.filter(node => node.id !== selectedNode.id));
       setSelectedNode(null);
       
-      // Save to history
       saveToHistory();
       
       toast({
@@ -346,7 +329,6 @@ export default function FlowEditor({
       
       setNodes((nds) => [...nds, newNode]);
       
-      // Save to history
       saveToHistory();
       
       toast({
@@ -357,10 +339,8 @@ export default function FlowEditor({
   };
 
   const approveHumanNode = (nodeId: string, approved: boolean) => {
-    // Update the pendingApprovals state
     setPendingApprovals(prev => prev.filter(id => id !== nodeId));
     
-    // Update the flow's humanInterventionPoints
     const updatedFlow: Flow = {
       ...flow,
       humanInterventionPoints: flow.humanInterventionPoints?.map(point => 
@@ -424,15 +404,12 @@ export default function FlowEditor({
     }
   };
 
-  // Filter nodes based on search query
   const filteredNodes = nodes.filter(node => 
     (node.data?.label?.toString().toLowerCase().includes(searchQuery.toLowerCase())) ||
     (node.data?.description?.toString().toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  // Export flow to JSON
   const exportFlow = () => {
-    // Convert ReactFlow nodes/edges back to Flow nodes/edges for export
     const flowNodes = reactFlowNodesToFlowNodes(nodes);
     const flowEdges = reactFlowEdgesToFlowEdges(edges);
     
@@ -446,9 +423,7 @@ export default function FlowEditor({
     linkElement.click();
   };
 
-  // Layout nodes in an organized grid
   const organizeLayout = () => {
-    // First categorize nodes by type
     const nodesByType: Record<string, Node[]> = {};
     
     nodes.forEach(node => {
@@ -458,7 +433,6 @@ export default function FlowEditor({
       nodesByType[node.type as string].push(node);
     });
     
-    // Then position them in a grid by category
     let updatedNodes: Node[] = [];
     let y = 50;
     
@@ -480,7 +454,6 @@ export default function FlowEditor({
         });
       });
       
-      // Update y for the next type group
       const rows = Math.ceil(typeNodes.length / nodesPerRow);
       y += rows * ySpacing + 100;
     });
@@ -504,7 +477,6 @@ export default function FlowEditor({
           action={
             !readOnly && (
               <Button variant="outline" onClick={() => {
-                // Add initial start node
                 const newNode: FlowNodeType = {
                   id: `node-${uuidv4()}`,
                   type: 'event',
@@ -514,7 +486,6 @@ export default function FlowEditor({
                   },
                   position: { x: 250, y: 50 },
                 };
-                // Convert to ReactFlow node and set
                 const reactFlowNode = flowNodesToReactFlowNodes([newNode])[0];
                 setNodes([reactFlowNode]);
                 saveToHistory();
@@ -801,7 +772,7 @@ export default function FlowEditor({
                   return (
                     <div key={nodeId} className="flex items-center justify-between gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
                       <div>
-                        <p className="text-xs font-medium">{node.data?.description}</p>
+                        <p className="text-xs font-medium">{typeof node.data?.description === 'string' ? node.data.description : 'Approval required'}</p>
                         <p className="text-xs text-muted-foreground">Requires approval</p>
                       </div>
                       <div className="flex gap-1">

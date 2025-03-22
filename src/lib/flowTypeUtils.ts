@@ -1,5 +1,17 @@
+
 import { Node, Edge } from '@xyflow/react';
 import { FlowNode, FlowEdge } from './types';
+import { ReactNode } from 'react';
+
+/**
+ * Safely converts ReactNode to string
+ */
+export const reactNodeToString = (node: ReactNode): string => {
+  if (node === null || node === undefined) return '';
+  if (typeof node === 'string') return node;
+  if (typeof node === 'number' || typeof node === 'boolean') return String(node);
+  return '';
+};
 
 /**
  * Converts a FlowNode array to ReactFlow Node array
@@ -23,7 +35,7 @@ export const reactFlowNodesToFlowNodes = (nodes: Node[]): FlowNode[] => {
   return nodes.map(node => ({
     id: node.id,
     type: node.type as any, // Cast to our FlowNodeType
-    label: node.data?.label as string || 'Node',
+    label: node.data?.label?.toString() || 'Node',
     data: { ...node.data },
     position: node.position,
   }));
@@ -59,7 +71,7 @@ export const reactFlowEdgesToFlowEdges = (edges: Edge[]): FlowEdge[] => {
     target: edge.target,
     sourceHandle: edge.sourceHandle,
     // Convert ReactNode label to string if needed
-    label: edge.label ? String(edge.label) : undefined,
+    label: edge.label ? reactNodeToString(edge.label) : undefined,
     animated: edge.animated,
     type: edge.type as any, // Cast to our EdgeType
   }));
