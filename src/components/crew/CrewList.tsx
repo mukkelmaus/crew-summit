@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Crew, CrewStatus } from "@/lib/types";
 import CrewCard from "@/components/CrewCard";
@@ -58,7 +59,8 @@ export default function CrewList({
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredCrews.map(crew => {
-          const status: CrewStatus = crew.status;
+          // Explicitly cast to CrewStatus to ensure type safety
+          const status = crew.status as CrewStatus;
           
           return (
             <Card key={crew.id} className="relative group overflow-hidden">
@@ -140,19 +142,19 @@ export default function CrewList({
                     </AlertDialogContent>
                   </AlertDialog>
                   
-                  {status !== 'running' && (
+                  {status !== "running" && (
                     <Button 
                       size="sm" 
                       variant="default"
                       onClick={() => onRunCrew && onRunCrew(crew.id)}
-                      disabled={status === 'running'}
+                      disabled={status === "running"}
                     >
                       <Play className="h-4 w-4 mr-1" />
                       Run
                     </Button>
                   )}
                   
-                  {status === 'running' && (
+                  {status === "running" && (
                     <Button size="sm" variant="outline" disabled>
                       <Loader2 className="h-4 w-4 animate-spin mr-1" />
                       Running

@@ -47,7 +47,8 @@ export default function CrewCardDetails({ crew, onRunCrew }: CrewCardDetailsProp
   };
 
   // Cast the status to CrewStatus to ensure type safety
-  const status: CrewStatus = crew.status;
+  const status = crew.status as CrewStatus;
+  // Alternatively: const status: CrewStatus = crew.status;
 
   return (
     <Card className="overflow-hidden">
@@ -152,17 +153,17 @@ export default function CrewCardDetails({ crew, onRunCrew }: CrewCardDetailsProp
         </Button>
         
         <div className="flex gap-2">
-          {status !== 'running' && (
+          {status !== "running" && (
             <Button
               onClick={() => onRunCrew && onRunCrew(crew.id)}
-              disabled={status === 'running'}
+              disabled={status === "running"}
             >
               <Play className="h-4 w-4 mr-2" />
               Run Crew
             </Button>
           )}
           
-          {status === 'running' && (
+          {status === "running" && (
             <Button disabled>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Running
