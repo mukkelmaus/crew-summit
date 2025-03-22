@@ -47,6 +47,10 @@ export default function CrewList({
   onDeleteCrew,
   onRunCrew
 }: CrewListProps) {
+  // Create type-safe status comparison functions
+  const isStatusRunning = (s: CrewStatus): boolean => s === "running";
+  const isStatusNotRunning = (s: CrewStatus): boolean => s !== "running";
+
   if (isLoading && crews.length === 0) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -142,19 +146,19 @@ export default function CrewList({
                     </AlertDialogContent>
                   </AlertDialog>
                   
-                  {status !== "running" && (
+                  {isStatusNotRunning(status) && (
                     <Button 
                       size="sm" 
                       variant="default"
                       onClick={() => onRunCrew && onRunCrew(crew.id)}
-                      disabled={status === "running"}
+                      disabled={isStatusRunning(status)}
                     >
                       <Play className="h-4 w-4 mr-1" />
                       Run
                     </Button>
                   )}
                   
-                  {status === "running" && (
+                  {isStatusRunning(status) && (
                     <Button size="sm" variant="outline" disabled>
                       <Loader2 className="h-4 w-4 animate-spin mr-1" />
                       Running
