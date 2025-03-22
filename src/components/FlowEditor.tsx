@@ -404,10 +404,19 @@ export default function FlowEditor({
     }
   };
 
-  const filteredNodes = nodes.filter(node => 
-    ((node.data?.label && String(node.data.label).toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (node.data?.description && typeof node.data.description === 'string' && node.data.description.toLowerCase().includes(searchQuery.toLowerCase())))
-  );
+  const filteredNodes = nodes.filter(node => {
+    const labelString = node.data?.label ? reactNodeToString(node.data.label) : '';
+    const descriptionString = node.data?.description 
+      ? typeof node.data.description === 'string' 
+        ? node.data.description 
+        : reactNodeToString(node.data.description)
+      : '';
+    
+    return (
+      labelString.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      descriptionString.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   const exportFlow = () => {
     const flowNodes = reactFlowNodesToFlowNodes(nodes);
