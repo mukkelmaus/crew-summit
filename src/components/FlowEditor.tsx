@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -14,6 +14,7 @@ import {
   Edge,
   Connection,
   useReactFlow,
+  useKeyPress,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { 
@@ -38,6 +39,16 @@ import {
   UserCheck,
   Database,
   Trash2,
+  Copy,
+  FileDown,
+  FileUp,
+  Undo,
+  Redo,
+  Maximize,
+  Minimize,
+  Layout,
+  Search,
+  ChevronsUpDown,
 } from 'lucide-react';
 import FlowNodeComponent from './FlowNodeComponent';
 import { EmptyState } from './ui/empty-state';
@@ -48,10 +59,19 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuShortcut,
 } from './ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Input } from './ui/input';
 
 interface FlowEditorProps {
   flow: Flow;
@@ -80,6 +100,11 @@ export default function FlowEditor({
   const [nodes, setNodes, onNodesChange] = useNodesState(flow.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(flow.edges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [history, setHistory] = useState<{nodes: Node[], edges: Edge[]}[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
   const { toast } = useToast();
   
@@ -87,6 +112,73 @@ export default function FlowEditor({
   const [pendingApprovals, setPendingApprovals] = useState<string[]>(
     flow.humanInterventionPoints?.filter(p => p.status === 'pending').map(p => p.nodeId) || []
   );
+
+  // Keyboard shortcuts
+  const deleteKeyPressed = useKeyPress('Delete');
+  const ctrlSPressed = useKeyPress(['Control', 's']);
+  const ctrlZPressed = useKeyPress(['Control', 'z']);
+  const ctrlYPressed = useKeyPress(['Control', 'y']);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    if (deleteKeyPressed && selectedNode && !readOnly) {
+      deleteSelectedNode();
+    }
+  }, [deleteKeyPressed, selectedNode]);
+
+  useEffect(() => {
+    if (ctrlSPressed && !readOnly) {
+      handleSave();
+    }
+  }, [ctrlSPressed]);
+
+  useEffect(() => {
+    if (ctrlZPressed && historyIndex > 0 && !readOnly) {
+      undoAction();
+    }
+  }, [ctrlZPressed]);
+
+  useEffect(() => {
+    if (ctrlYPressed && historyIndex < history.length - 1 && !readOnly) {
+      redoAction();
+    }
+  }, [ctrlYPressed]);
+
+  // Save current state to history
+  const saveToHistory = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      // If we're in the middle of the history, truncate it
+      setHistory(history.slice(0, historyIndex + 1));
+    }
+    
+    setHistory(prev => [...prev, { nodes, edges }]);
+    setHistoryIndex(prev => prev + 1);
+  }, [nodes, edges, history, historyIndex]);
+
+  // Save history when nodes or edges change
+  useEffect(() => {
+    if (nodes.length > 0 || edges.length > 0) {
+      saveToHistory();
+    }
+  }, []);
+
+  const undoAction = () => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      setNodes(prevState.nodes);
+      setEdges(prevState.edges);
+      setHistoryIndex(prev => prev - 1);
+    }
+  };
+
+  const redoAction = () => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      setNodes(nextState.nodes);
+      setEdges(nextState.edges);
+      setHistoryIndex(prev => prev + 1);
+    }
+  };
 
   const onConnect = useCallback((params: any) => {
     const sourceNode = nodes.find(node => node.id === params.source);
@@ -113,7 +205,10 @@ export default function FlowEditor({
                '#64748b'
       }
     }, eds));
-  }, [nodes, setEdges]);
+    
+    // Save to history
+    saveToHistory();
+  }, [nodes, setEdges, saveToHistory]);
 
   const handleSave = () => {
     if (onSave) {
@@ -140,7 +235,7 @@ export default function FlowEditor({
       toast({
         title: "Human approval required",
         description: "This flow has pending approval steps that must be resolved before running.",
-        variant: "destructive", // Changed from "warning" to "destructive" to match allowed variants
+        variant: "destructive",
       });
       return;
     }
@@ -162,21 +257,36 @@ export default function FlowEditor({
   };
 
   const addNewNode = (type: NodeType) => {
-    // Create a new node of the specified type
-    const newNode: FlowNodeType = {
-      id: `node-${uuidv4()}`,
-      type,
-      label: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
-      data: {
-        description: `New ${type.replace('_', ' ')} node`,
-      },
-      position: { 
-        x: Math.random() * 300 + 50, 
-        y: Math.random() * 300 + 50 
-      },
-    };
-    
-    setNodes((nds) => [...nds, newNode]);
+    if (reactFlowInstance) {
+      const center = reactFlowInstance.screenToFlowPosition({
+        x: reactFlowWrapper.current ? reactFlowWrapper.current.clientWidth / 2 : 400,
+        y: reactFlowWrapper.current ? reactFlowWrapper.current.clientHeight / 2 : 300,
+      });
+      
+      // Create a new node of the specified type
+      const newNode: FlowNodeType = {
+        id: `node-${uuidv4()}`,
+        type,
+        label: type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' '),
+        data: {
+          description: `New ${type.replace('_', ' ')} node`,
+        },
+        position: { 
+          x: center.x, 
+          y: center.y 
+        },
+      };
+      
+      setNodes((nds) => [...nds, newNode]);
+      
+      // Save to history
+      saveToHistory();
+      
+      toast({
+        title: "Node added",
+        description: `Added new ${type.replace('_', ' ')} node`,
+      });
+    }
   };
 
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
@@ -194,9 +304,35 @@ export default function FlowEditor({
       setNodes(nodes.filter(node => node.id !== selectedNode.id));
       setSelectedNode(null);
       
+      // Save to history
+      saveToHistory();
+      
       toast({
         title: "Node deleted",
         description: `${selectedNode.type} node has been removed from the flow.`,
+      });
+    }
+  };
+
+  const duplicateSelectedNode = () => {
+    if (selectedNode) {
+      const newNode = {
+        ...selectedNode,
+        id: `node-${uuidv4()}`,
+        position: {
+          x: selectedNode.position.x + 50,
+          y: selectedNode.position.y + 50,
+        },
+      };
+      
+      setNodes((nds) => [...nds, newNode]);
+      
+      // Save to history
+      saveToHistory();
+      
+      toast({
+        title: "Node duplicated",
+        description: `Created a copy of ${selectedNode.type} node.`,
       });
     }
   };
@@ -224,6 +360,16 @@ export default function FlowEditor({
       description: `The human approval step has been ${approved ? 'approved' : 'rejected'}.`,
       variant: approved ? "default" : "destructive",
     });
+  };
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    } else if (reactFlowWrapper.current) {
+      reactFlowWrapper.current.requestFullscreen();
+      setIsFullscreen(true);
+    }
   };
 
   const getStatusIndicator = () => {
@@ -259,9 +405,75 @@ export default function FlowEditor({
     }
   };
 
+  // Filter nodes based on search query
+  const filteredNodes = nodes.filter(node => 
+    node.label?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+    node.data?.description?.toString().toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Export flow to JSON
+  const exportFlow = () => {
+    const dataStr = JSON.stringify({ ...flow, nodes, edges }, null, 2);
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+    const exportFileDefaultName = `${flow.name.replace(/\s/g, '_')}_flow.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  // Layout nodes in an organized grid
+  const organizeLayout = () => {
+    // First categorize nodes by type
+    const nodesByType: Record<string, Node[]> = {};
+    
+    nodes.forEach(node => {
+      if (!nodesByType[node.type as string]) {
+        nodesByType[node.type as string] = [];
+      }
+      nodesByType[node.type as string].push(node);
+    });
+    
+    // Then position them in a grid by category
+    let updatedNodes: Node[] = [];
+    let y = 50;
+    
+    Object.entries(nodesByType).forEach(([type, typeNodes]) => {
+      const xSpacing = 250;
+      const ySpacing = 150;
+      const nodesPerRow = 3;
+      
+      typeNodes.forEach((node, index) => {
+        const row = Math.floor(index / nodesPerRow);
+        const col = index % nodesPerRow;
+        
+        updatedNodes.push({
+          ...node,
+          position: {
+            x: 100 + col * xSpacing,
+            y: y + row * ySpacing
+          }
+        });
+      });
+      
+      // Update y for the next type group
+      const rows = Math.ceil(typeNodes.length / nodesPerRow);
+      y += rows * ySpacing + 100;
+    });
+    
+    setNodes(updatedNodes);
+    reactFlowInstance.fitView({ padding: 0.2 });
+    
+    toast({
+      title: "Layout organized",
+      description: "Nodes have been arranged in a structured layout."
+    });
+  };
+
   if (nodes.length === 0) {
     return (
-      <div className="border rounded-md p-8 h-[500px] flex items-center justify-center">
+      <div className="border rounded-md p-8 h-[500px] flex items-center justify-center" ref={reactFlowWrapper}>
         <EmptyState
           icon={<AlertTriangle className="h-16 w-16 opacity-20" />}
           title="No flow nodes defined"
@@ -280,6 +492,7 @@ export default function FlowEditor({
                   position: { x: 250, y: 50 },
                 };
                 setNodes([newNode]);
+                saveToHistory();
               }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Start Node
@@ -292,9 +505,9 @@ export default function FlowEditor({
   }
 
   return (
-    <div className="border rounded-md h-[500px] relative">
+    <div className={`border rounded-md ${isFullscreen ? 'h-screen' : 'h-[500px]'} relative`} ref={reactFlowWrapper}>
       <ReactFlow
-        nodes={nodes}
+        nodes={searchQuery ? filteredNodes : nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -307,77 +520,234 @@ export default function FlowEditor({
         nodesConnectable={!readOnly}
         elementsSelectable={!readOnly}
       >
-        <Controls />
+        <Controls showInteractive={true} />
         <MiniMap />
         <Background />
         
         {!readOnly && (
           <>
-            <Panel position="top-right">
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleSave}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save
-                </Button>
-                <Button size="sm" onClick={handleRun} disabled={flow.status === 'running'}>
-                  <Play className="h-4 w-4 mr-2" />
-                  Run Flow
-                </Button>
-                
-                {selectedNode && (
-                  <Button variant="destructive" size="sm" onClick={deleteSelectedNode}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Node
-                  </Button>
-                )}
+            <Panel position="top-right" className="space-y-2">
+              <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm">
+                <Input
+                  placeholder="Search nodes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-48"
+                  prefix={<Search className="h-4 w-4 text-muted-foreground" />}
+                />
+              </div>
+            
+              <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm">
+                <div className="flex gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={handleSave}>
+                          <Save className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Save Flow (Ctrl+S)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="icon" onClick={handleRun} disabled={flow.status === 'running'}>
+                          <Play className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Run Flow</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={undoAction} disabled={historyIndex <= 0}>
+                          <Undo className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Undo (Ctrl+Z)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={redoAction} disabled={historyIndex >= history.length - 1}>
+                          <Redo className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Redo (Ctrl+Y)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={toggleFullscreen}>
+                          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Toggle Fullscreen</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              
+              {selectedNode && (
+                <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm space-y-2">
+                  <p className="text-xs font-medium">Selected: {selectedNode.label}</p>
+                  <div className="flex gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="icon" onClick={duplicateSelectedNode}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Duplicate Node</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="destructive" size="icon" onClick={deleteSelectedNode}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Delete Node (Delete)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+              )}
+              
+              <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm">
+                <div className="flex gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={organizeLayout}>
+                          <Layout className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Organize Layout</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={exportFlow}>
+                          <FileDown className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Export Flow</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
             </Panel>
             
             <Panel position="bottom-left">
               <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm">
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Node
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Node
+                            <ChevronsUpDown className="h-4 w-4 ml-2 opacity-50" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add a new node to the flow</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <DropdownMenuContent className="w-56">
                     <DropdownMenuLabel>Node Types</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => addNewNode('task')} className="cursor-pointer">
-                      <List className="h-4 w-4 mr-2" />
-                      Task
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addNewNode('condition')} className="cursor-pointer">
-                      <SplitSquareVertical className="h-4 w-4 mr-2" />
-                      Condition
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addNewNode('loop')} className="cursor-pointer">
-                      <Repeat className="h-4 w-4 mr-2" />
-                      Loop
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addNewNode('parallel')} className="cursor-pointer">
-                      <Code2 className="h-4 w-4 mr-2" />
-                      Parallel
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addNewNode('sequence')} className="cursor-pointer">
-                      <List className="h-4 w-4 mr-2" />
-                      Sequence
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addNewNode('event')} className="cursor-pointer">
-                      <Zap className="h-4 w-4 mr-2" />
-                      Event
-                    </DropdownMenuItem>
+                    
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">Basic</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => addNewNode('task')} className="cursor-pointer">
+                        <List className="h-4 w-4 mr-2" />
+                        Task
+                        <DropdownMenuShortcut>T</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => addNewNode('event')} className="cursor-pointer">
+                        <Zap className="h-4 w-4 mr-2" />
+                        Event
+                        <DropdownMenuShortcut>E</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => addNewNode('human_approval')} className="cursor-pointer">
-                      <UserCheck className="h-4 w-4 mr-2" />
-                      Human Approval
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => addNewNode('data_operation')} className="cursor-pointer">
-                      <Database className="h-4 w-4 mr-2" />
-                      Data Operation
-                    </DropdownMenuItem>
+                    
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">Control Flow</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => addNewNode('condition')} className="cursor-pointer">
+                        <SplitSquareVertical className="h-4 w-4 mr-2" />
+                        Condition
+                        <DropdownMenuShortcut>C</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => addNewNode('loop')} className="cursor-pointer">
+                        <Repeat className="h-4 w-4 mr-2" />
+                        Loop
+                        <DropdownMenuShortcut>L</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => addNewNode('parallel')} className="cursor-pointer">
+                        <Code2 className="h-4 w-4 mr-2" />
+                        Parallel
+                        <DropdownMenuShortcut>P</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => addNewNode('sequence')} className="cursor-pointer">
+                        <List className="h-4 w-4 mr-2" />
+                        Sequence
+                        <DropdownMenuShortcut>S</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                    
+                    <DropdownMenuSeparator />
+                    
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">Advanced</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => addNewNode('human_approval')} className="cursor-pointer">
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        Human Approval
+                        <DropdownMenuShortcut>H</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => addNewNode('data_operation')} className="cursor-pointer">
+                        <Database className="h-4 w-4 mr-2" />
+                        Data Operation
+                        <DropdownMenuShortcut>D</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
