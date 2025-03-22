@@ -23,6 +23,12 @@ import {
   FlowEdge as FlowEdgeType,
   FlowNodeType as NodeType,
 } from '@/lib/types';
+import {
+  flowNodesToReactFlowNodes,
+  reactFlowNodesToFlowNodes,
+  flowEdgesToReactFlowEdges,
+  reactFlowEdgesToFlowEdges
+} from '@/lib/flowTypeUtils';
 import { Button } from './ui/button';
 import { 
   Play, 
@@ -97,8 +103,12 @@ export default function FlowEditor({
   onRun,
   readOnly = false
 }: FlowEditorProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState(flow.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(flow.edges);
+  // Convert Flow nodes/edges to ReactFlow nodes/edges for initial state
+  const initialNodes = flowNodesToReactFlowNodes(flow.nodes);
+  const initialEdges = flowEdgesToReactFlowEdges(flow.edges);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,10 +222,14 @@ export default function FlowEditor({
 
   const handleSave = () => {
     if (onSave) {
+      // Convert ReactFlow nodes/edges back to Flow nodes/edges for saving
+      const flowNodes = reactFlowNodesToFlowNodes(nodes);
+      const flowEdges = reactFlowEdgesToFlowEdges(edges);
+      
       onSave({
         ...flow,
-        nodes,
-        edges,
+        nodes: flowNodes,
+        edges: flowEdges,
         updatedAt: new Date().toISOString(),
       });
       toast({
@@ -241,10 +255,14 @@ export default function FlowEditor({
     }
 
     if (onRun) {
+      // Convert ReactFlow nodes/edges back to Flow nodes/edges for running
+      const flowNodes = reactFlowNodesToFlowNodes(nodes);
+      const flowEdges = reactFlowEdgesToFlowEdges(edges);
+      
       onRun({
         ...flow,
-        nodes,
-        edges,
+        nodes: flowNodes,
+        edges: flowEdges,
         status: 'running',
         lastRun: new Date().toISOString(),
       });
@@ -277,7 +295,9 @@ export default function FlowEditor({
         },
       };
       
-      setNodes((nds) => [...nds, newNode]);
+      // Convert and add to the ReactFlow nodes
+      const reactFlowNode = flowNodesToReactFlowNodes([newNode])[0];
+      setNodes((nds) => [...nds, reactFlowNode]);
       
       // Save to history
       saveToHistory();
@@ -407,13 +427,17 @@ export default function FlowEditor({
 
   // Filter nodes based on search query
   const filteredNodes = nodes.filter(node => 
-    node.label?.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-    node.data?.description?.toString().toLowerCase().includes(searchQuery.toLowerCase())
+    (node.data?.label?.toString().toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (node.data?.description?.toString().toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Export flow to JSON
   const exportFlow = () => {
-    const dataStr = JSON.stringify({ ...flow, nodes, edges }, null, 2);
+    // Convert ReactFlow nodes/edges back to Flow nodes/edges for export
+    const flowNodes = reactFlowNodesToFlowNodes(nodes);
+    const flowEdges = reactFlowEdgesToFlowEdges(edges);
+    
+    const dataStr = JSON.stringify({ ...flow, nodes: flowNodes, edges: flowEdges }, null, 2);
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
     const exportFileDefaultName = `${flow.name.replace(/\s/g, '_')}_flow.json`;
     
@@ -491,7 +515,9 @@ export default function FlowEditor({
                   },
                   position: { x: 250, y: 50 },
                 };
-                setNodes([newNode]);
+                // Convert to ReactFlow node and set
+                const reactFlowNode = flowNodesToReactFlowNodes([newNode])[0];
+                setNodes([reactFlowNode]);
                 saveToHistory();
               }}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -608,7 +634,9 @@ export default function FlowEditor({
               
               {selectedNode && (
                 <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm space-y-2">
-                  <p className="text-xs font-medium">Selected: {selectedNode.label}</p>
+                  <p className="text-xs font-medium">
+                    Selected: {selectedNode.data?.label || selectedNode.type}
+                  </p>
                   <div className="flex gap-2">
                     <TooltipProvider>
                       <Tooltip>
@@ -774,7 +802,7 @@ export default function FlowEditor({
                   return (
                     <div key={nodeId} className="flex items-center justify-between gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
                       <div>
-                        <p className="text-xs font-medium">{node.data.description}</p>
+                        <p className="text-xs font-medium">{node.data?.description}</p>
                         <p className="text-xs text-muted-foreground">Requires approval</p>
                       </div>
                       <div className="flex gap-1">
