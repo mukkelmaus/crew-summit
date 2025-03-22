@@ -1,4 +1,3 @@
-
 import { Node, Edge } from '@xyflow/react';
 import { FlowNode, FlowEdge } from './types';
 import { ReactNode, isValidElement } from 'react';
@@ -10,7 +9,7 @@ export const reactNodeToString = (node: ReactNode | unknown): string => {
   if (node === null || node === undefined) return '';
   if (typeof node === 'string') return node;
   if (typeof node === 'number' || typeof node === 'boolean') return String(node);
-  if (isValidElement(node as React.ReactElement)) return 'React Element';
+  if (isValidElement(node)) return 'React Element';
   return String(node);
 };
 
@@ -22,7 +21,10 @@ export const flowNodesToReactFlowNodes = (nodes: FlowNode[]): Node[] => {
     id: node.id,
     type: node.type,
     position: node.position,
-    data: { ...node.data, label: node.label },
+    data: { 
+      ...node.data, 
+      label: node.label 
+    },
     // Other properties that ReactFlow's Node might expect
     draggable: true,
     selectable: true,
