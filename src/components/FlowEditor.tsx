@@ -409,7 +409,7 @@ export default function FlowEditor({
     const descriptionString = node.data?.description 
       ? typeof node.data.description === 'string' 
         ? node.data.description 
-        : reactNodeToString(node.data.description)
+        : reactNodeToString(node.data.description as ReactNode)
       : '';
     
     return (
@@ -780,7 +780,7 @@ export default function FlowEditor({
                   
                   const nodeDescription = typeof node.data?.description === 'string' 
                     ? node.data.description 
-                    : 'Approval required';
+                    : reactNodeToString(node.data?.description as ReactNode);
                   
                   return (
                     <div key={nodeId} className="flex items-center justify-between gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">

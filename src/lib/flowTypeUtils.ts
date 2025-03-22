@@ -6,12 +6,12 @@ import { ReactNode, isValidElement } from 'react';
 /**
  * Safely converts ReactNode to string
  */
-export const reactNodeToString = (node: ReactNode): string => {
+export const reactNodeToString = (node: ReactNode | unknown): string => {
   if (node === null || node === undefined) return '';
   if (typeof node === 'string') return node;
   if (typeof node === 'number' || typeof node === 'boolean') return String(node);
-  if (isValidElement(node)) return 'React Element';
-  return '';
+  if (isValidElement(node as React.ReactElement)) return 'React Element';
+  return String(node);
 };
 
 /**
