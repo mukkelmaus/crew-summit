@@ -769,10 +769,14 @@ export default function FlowEditor({
                   const node = nodes.find(n => n.id === nodeId);
                   if (!node) return null;
                   
+                  const nodeDescription = typeof node.data?.description === 'string' 
+                    ? node.data.description 
+                    : 'Approval required';
+                  
                   return (
                     <div key={nodeId} className="flex items-center justify-between gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
                       <div>
-                        <p className="text-xs font-medium">{typeof node.data?.description === 'string' ? node.data.description : 'Approval required'}</p>
+                        <p className="text-xs font-medium">{nodeDescription}</p>
                         <p className="text-xs text-muted-foreground">Requires approval</p>
                       </div>
                       <div className="flex gap-1">
