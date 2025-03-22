@@ -36,7 +36,7 @@ export const reactFlowNodesToFlowNodes = (nodes: Node[]): FlowNode[] => {
   return nodes.map(node => ({
     id: node.id,
     type: node.type as any, // Cast to our FlowNodeType
-    label: node.data?.label ? reactNodeToString(node.data.label) : 'Node',
+    label: node.data?.label ? reactNodeToString(node.data.label as ReactNode) : 'Node',
     data: { ...node.data },
     position: node.position,
   }));
@@ -72,7 +72,7 @@ export const reactFlowEdgesToFlowEdges = (edges: Edge[]): FlowEdge[] => {
     target: edge.target,
     sourceHandle: edge.sourceHandle,
     // Convert ReactNode label to string if needed
-    label: edge.label ? reactNodeToString(edge.label) : undefined,
+    label: edge.label ? reactNodeToString(edge.label as ReactNode) : undefined,
     animated: edge.animated,
     type: edge.type as any, // Cast to our EdgeType
   }));
