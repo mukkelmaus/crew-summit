@@ -38,7 +38,7 @@ export default function Header() {
       <div className="flex items-center justify-between px-6 py-3">
         <div className="flex items-center space-x-2">
           <Package className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-medium">CrewAI Hub</h1>
+          <h1 className="text-xl font-medium">CrewSUMMIT</h1>
         </div>
 
         <nav className="hidden md:flex items-center space-x-1">
