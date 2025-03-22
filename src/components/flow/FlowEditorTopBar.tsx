@@ -69,13 +69,17 @@ export function FlowEditorTopBar({
       {!readOnly && (
         <Panel position="top-right" className="space-y-2">
           <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm">
-            <Input
-              placeholder="Search nodes..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-48"
-              prefix={<Search className="h-4 w-4 text-muted-foreground" />}
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <Input
+                placeholder="Search nodes..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-48 pl-9"
+              />
+            </div>
           </div>
         </Panel>
       )}
