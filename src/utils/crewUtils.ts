@@ -1,5 +1,4 @@
 
-
 import { Crew, CrewStatus } from "@/lib/types";
 
 // Get CSS class for crew status badge
@@ -33,4 +32,3 @@ export const filterCrews = (
     return matchesSearch && matchesStatus;
   });
 };
-
