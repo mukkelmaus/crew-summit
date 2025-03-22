@@ -405,7 +405,7 @@ export default function FlowEditor({
   };
 
   const filteredNodes = nodes.filter(node => {
-    const labelString = node.data?.label ? reactNodeToString(node.data.label) : '';
+    const labelString = node.data?.label ? reactNodeToString(node.data.label as ReactNode) : '';
     const descriptionString = node.data?.description 
       ? typeof node.data.description === 'string' 
         ? node.data.description 
