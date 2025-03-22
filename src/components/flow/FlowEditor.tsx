@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   ReactFlow,
@@ -116,6 +117,81 @@ export default function FlowEditor({
   const ctrlZPressed = useKeyPress(['Control', 'z']);
   const ctrlYPressed = useKeyPress(['Control', 'y']);
 
+  // Define all functions before using them in useEffect hooks
+  const saveToHistory = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      setHistory(history.slice(0, historyIndex + 1));
+    }
+    
+    setHistory(prev => [...prev, { nodes, edges }]);
+    setHistoryIndex(prev => prev + 1);
+  }, [nodes, edges, history, historyIndex]);
+
+  const handleNodeClick = (event: React.MouseEvent, node: Node) => {
+    setSelectedNode(node);
+  };
+  
+  const deleteSelectedNode = useCallback(() => {
+    if (selectedNode) {
+      setEdges(edges.filter(edge => 
+        edge.source !== selectedNode.id && edge.target !== selectedNode.id
+      ));
+      
+      setNodes(nodes.filter(node => node.id !== selectedNode.id));
+      setSelectedNode(null);
+      
+      saveToHistory();
+      
+      toast({
+        title: "Node deleted",
+        description: `${selectedNode.type} node has been removed from the flow.`,
+      });
+    }
+  }, [selectedNode, setEdges, edges, setNodes, nodes, saveToHistory, toast]);
+
+  const undoAction = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevState = history[historyIndex - 1];
+      setNodes(prevState.nodes);
+      setEdges(prevState.edges);
+      setHistoryIndex(prev => prev - 1);
+    }
+  }, [historyIndex, history, setNodes, setEdges]);
+
+  const redoAction = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      const nextState = history[historyIndex + 1];
+      setNodes(nextState.nodes);
+      setEdges(nextState.edges);
+      setHistoryIndex(prev => prev + 1);
+    }
+  }, [historyIndex, history, setNodes, setEdges, history.length]);
+
+  const handleSave = useCallback(async () => {
+    if (onSave) {
+      setIsSaving(true);
+      try {
+        const updatedFlow = prepareFlowForSave(flow, nodes, edges);
+        await onSave(updatedFlow);
+        
+        toast({
+          title: "Flow saved",
+          description: "Your flow has been saved successfully.",
+        });
+      } catch (error) {
+        console.error("Error saving flow:", error);
+        toast({
+          title: "Failed to save",
+          description: error instanceof Error ? error.message : "An unexpected error occurred",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  }, [onSave, flow, nodes, edges, toast]);
+
+  // Now we can use the functions in useEffect hooks
   useEffect(() => {
     if (deleteKeyPressed && selectedNode && !readOnly) {
       deleteSelectedNode();
@@ -138,40 +214,13 @@ export default function FlowEditor({
     if (ctrlYPressed && historyIndex < history.length - 1 && !readOnly) {
       redoAction();
     }
-  }, [ctrlYPressed, historyIndex, readOnly, redoAction]);
-
-  const saveToHistory = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      setHistory(history.slice(0, historyIndex + 1));
-    }
-    
-    setHistory(prev => [...prev, { nodes, edges }]);
-    setHistoryIndex(prev => prev + 1);
-  }, [nodes, edges, history, historyIndex]);
+  }, [ctrlYPressed, historyIndex, history.length, readOnly, redoAction]);
 
   useEffect(() => {
     if (nodes.length > 0 || edges.length > 0) {
       saveToHistory();
     }
-  }, [nodes, edges, saveToHistory]);
-
-  const undoAction = () => {
-    if (historyIndex > 0) {
-      const prevState = history[historyIndex - 1];
-      setNodes(prevState.nodes);
-      setEdges(prevState.edges);
-      setHistoryIndex(prev => prev - 1);
-    }
-  };
-
-  const redoAction = () => {
-    if (historyIndex < history.length - 1) {
-      const nextState = history[historyIndex + 1];
-      setNodes(nextState.nodes);
-      setEdges(nextState.edges);
-      setHistoryIndex(prev => prev + 1);
-    }
-  };
+  }, []);
 
   const onConnect = useCallback((params: Connection) => {
     const sourceNode = nodes.find(node => node.id === params.source);
@@ -179,30 +228,6 @@ export default function FlowEditor({
     setEdges((eds) => addEdge(connection, eds));
     saveToHistory();
   }, [nodes, setEdges, saveToHistory]);
-
-  const handleSave = async () => {
-    if (onSave) {
-      setIsSaving(true);
-      try {
-        const updatedFlow = prepareFlowForSave(flow, nodes, edges);
-        await onSave(updatedFlow);
-        
-        toast({
-          title: "Flow saved",
-          description: "Your flow has been saved successfully.",
-        });
-      } catch (error) {
-        console.error("Error saving flow:", error);
-        toast({
-          title: "Failed to save",
-          description: error instanceof Error ? error.message : "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setIsSaving(false);
-      }
-    }
-  };
 
   const handleRun = async () => {
     const hasHumanApprovalNodes = nodes.some(node => 
@@ -260,28 +285,6 @@ export default function FlowEditor({
       toast({
         title: "Node added",
         description: `Added new ${type.replace('_', ' ')} node`,
-      });
-    }
-  };
-
-  const handleNodeClick = (event: React.MouseEvent, node: Node) => {
-    setSelectedNode(node);
-  };
-  
-  const deleteSelectedNode = () => {
-    if (selectedNode) {
-      setEdges(edges.filter(edge => 
-        edge.source !== selectedNode.id && edge.target !== selectedNode.id
-      ));
-      
-      setNodes(nodes.filter(node => node.id !== selectedNode.id));
-      setSelectedNode(null);
-      
-      saveToHistory();
-      
-      toast({
-        title: "Node deleted",
-        description: `${selectedNode.type} node has been removed from the flow.`,
       });
     }
   };

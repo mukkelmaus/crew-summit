@@ -22,15 +22,19 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 1,
-      onError: error => {
-        // Let our error handler process the error
-        handleError(error, true);
+      meta: {
+        onError: (error: unknown) => {
+          // Let our error handler process the error
+          handleError(error, true);
+        }
       }
     },
     mutations: {
-      onError: error => {
-        // Let our error handler process the error
-        handleError(error, true);
+      meta: {
+        onError: (error: unknown) => {
+          // Let our error handler process the error
+          handleError(error, true);
+        }
       }
     }
   },
