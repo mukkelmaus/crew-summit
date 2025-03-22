@@ -10,6 +10,7 @@ export const reactNodeToString = (node: ReactNode): string => {
   if (node === null || node === undefined) return '';
   if (typeof node === 'string') return node;
   if (typeof node === 'number' || typeof node === 'boolean') return String(node);
+  if (React.isValidElement(node)) return 'React Element';
   return '';
 };
 
@@ -35,7 +36,7 @@ export const reactFlowNodesToFlowNodes = (nodes: Node[]): FlowNode[] => {
   return nodes.map(node => ({
     id: node.id,
     type: node.type as any, // Cast to our FlowNodeType
-    label: node.data?.label?.toString() || 'Node',
+    label: node.data?.label ? String(node.data.label) : 'Node',
     data: { ...node.data },
     position: node.position,
   }));

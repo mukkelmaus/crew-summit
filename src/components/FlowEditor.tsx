@@ -405,8 +405,8 @@ export default function FlowEditor({
   };
 
   const filteredNodes = nodes.filter(node => 
-    (node.data?.label?.toString().toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (node.data?.description?.toString().toLowerCase().includes(searchQuery.toLowerCase()))
+    ((node.data?.label && String(node.data.label).toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (node.data?.description && typeof node.data.description === 'string' && node.data.description.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   const exportFlow = () => {
