@@ -12,15 +12,27 @@ import Flows from "@/pages/Flows";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ApiErrorBoundary from "@/components/ApiErrorBoundary";
+import { handleError } from "@/lib/errorHandler";
 import "./App.css";
 
-// Create a client
+// Create a client with global error handling
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       retry: 1,
+      onError: error => {
+        // Let our error handler process the error
+        handleError(error, true);
+      }
     },
+    mutations: {
+      onError: error => {
+        // Let our error handler process the error
+        handleError(error, true);
+      }
+    }
   },
 });
 
@@ -29,17 +41,19 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="system" storageKey="crewai-ui-theme">
         <QueryClientProvider client={queryClient}>
-          <Router>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/agents" element={<Agents />} />
-              <Route path="/crews" element={<Crews />} />
-              <Route path="/crew/:id" element={<CrewDetail />} />
-              <Route path="/flows" element={<Flows />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Router>
+          <ApiErrorBoundary>
+            <Router>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/agents" element={<Agents />} />
+                <Route path="/crews" element={<Crews />} />
+                <Route path="/crew/:id" element={<CrewDetail />} />
+                <Route path="/flows" element={<Flows />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Router>
+          </ApiErrorBoundary>
           <Toaster />
         </QueryClientProvider>
       </ThemeProvider>

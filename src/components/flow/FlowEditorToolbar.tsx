@@ -2,7 +2,17 @@
 import { ReactNode } from 'react';
 import { Panel } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
-import { Save, Play, Undo, Redo, Maximize, Minimize, Layout, FileDown } from 'lucide-react';
+import { 
+  Save, 
+  Play, 
+  Undo2, 
+  Redo2, 
+  Maximize, 
+  Minimize, 
+  Download, 
+  Layout, 
+  Loader2
+} from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -11,17 +21,18 @@ import {
 } from "@/components/ui/tooltip";
 
 interface ToolbarButtonProps {
-  icon: ReactNode;
   onClick: () => void;
+  icon: ReactNode;
   tooltip: string;
   disabled?: boolean;
+  variant?: "default" | "secondary" | "outline" | "destructive" | "link" | "ghost" | null | undefined;
 }
 
-const ToolbarButton = ({ icon, onClick, tooltip, disabled = false }: ToolbarButtonProps) => (
+const ToolbarButton = ({ onClick, icon, tooltip, disabled = false, variant = "outline" }: ToolbarButtonProps) => (
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="outline" size="icon" onClick={onClick} disabled={disabled}>
+        <Button variant={variant} size="icon" onClick={onClick} disabled={disabled}>
           {icon}
         </Button>
       </TooltipTrigger>
@@ -44,74 +55,76 @@ interface FlowEditorToolbarProps {
   isRunning: boolean;
   canUndo: boolean;
   canRedo: boolean;
+  isSaving?: boolean;
 }
 
-export function FlowEditorToolbar({
-  onSave,
-  onRun,
-  onUndo,
-  onRedo,
-  onToggleFullscreen,
-  onOrganizeLayout,
+export function FlowEditorToolbar({ 
+  onSave, 
+  onRun, 
+  onUndo, 
+  onRedo, 
+  onToggleFullscreen, 
+  onOrganizeLayout, 
   onExportFlow,
   isFullscreen,
   isRunning,
   canUndo,
-  canRedo
+  canRedo,
+  isSaving = false
 }: FlowEditorToolbarProps) {
   return (
-    <Panel position="top-right" className="space-y-2">
-      <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm">
-        <div className="flex gap-2">
-          <ToolbarButton 
-            icon={<Save className="h-4 w-4" />}
-            onClick={onSave}
-            tooltip="Save Flow (Ctrl+S)"
-          />
-          
-          <ToolbarButton 
-            icon={<Play className="h-4 w-4" />}
-            onClick={onRun}
-            tooltip="Run Flow"
-            disabled={isRunning}
-          />
-          
-          <ToolbarButton 
-            icon={<Undo className="h-4 w-4" />}
-            onClick={onUndo}
-            tooltip="Undo (Ctrl+Z)"
-            disabled={!canUndo}
-          />
-          
-          <ToolbarButton 
-            icon={<Redo className="h-4 w-4" />}
-            onClick={onRedo}
-            tooltip="Redo (Ctrl+Y)"
-            disabled={!canRedo}
-          />
-          
-          <ToolbarButton 
-            icon={isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-            onClick={onToggleFullscreen}
-            tooltip="Toggle Fullscreen"
-          />
-        </div>
-      </div>
-      
-      <div className="bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm">
-        <div className="flex gap-2">
-          <ToolbarButton 
-            icon={<Layout className="h-4 w-4" />}
-            onClick={onOrganizeLayout}
-            tooltip="Organize Layout"
-          />
-          
-          <ToolbarButton 
-            icon={<FileDown className="h-4 w-4" />}
-            onClick={onExportFlow}
-            tooltip="Export Flow"
-          />
-        </div>
+    <Panel position="top-center" className="space-y-2">
+      <div className="flex space-x-2 bg-white dark:bg-gray-900 p-2 rounded-md border shadow-sm">
+        <ToolbarButton
+          onClick={onSave}
+          icon={isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          tooltip={isSaving ? "Saving..." : "Save Flow (Ctrl+S)"}
+          disabled={isSaving}
+        />
+        
+        <ToolbarButton
+          onClick={onRun}
+          icon={isRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          tooltip={isRunning ? "Running..." : "Run Flow"}
+          disabled={isRunning}
+          variant={isRunning ? "outline" : "default"}
+        />
+        
+        <span className="border-r border-gray-200 dark:border-gray-700 mx-1"></span>
+        
+        <ToolbarButton
+          onClick={onUndo}
+          icon={<Undo2 className="h-4 w-4" />}
+          tooltip="Undo (Ctrl+Z)"
+          disabled={!canUndo}
+        />
+        
+        <ToolbarButton
+          onClick={onRedo}
+          icon={<Redo2 className="h-4 w-4" />}
+          tooltip="Redo (Ctrl+Y)"
+          disabled={!canRedo}
+        />
+        
+        <span className="border-r border-gray-200 dark:border-gray-700 mx-1"></span>
+        
+        <ToolbarButton
+          onClick={onOrganizeLayout}
+          icon={<Layout className="h-4 w-4" />}
+          tooltip="Auto-organize Layout"
+        />
+        
+        <ToolbarButton
+          onClick={onToggleFullscreen}
+          icon={isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          tooltip={isFullscreen ? "Exit Fullscreen" : "Fullscreen Mode"}
+        />
+        
+        <ToolbarButton
+          onClick={onExportFlow}
+          icon={<Download className="h-4 w-4" />}
+          tooltip="Export Flow"
+        />
       </div>
     </Panel>
   );

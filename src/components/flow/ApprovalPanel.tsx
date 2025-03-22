@@ -1,8 +1,10 @@
 
+import { useState } from 'react';
 import { Panel } from '@xyflow/react';
 import { Node } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
 import { reactNodeToString } from '@/lib/flowTypeUtils';
+import { Loader2 } from 'lucide-react';
 
 interface ApprovalPanelProps {
   pendingApprovals: string[];
@@ -11,7 +13,19 @@ interface ApprovalPanelProps {
 }
 
 export function ApprovalPanel({ pendingApprovals, nodes, onApprove }: ApprovalPanelProps) {
+  const [processingNodes, setProcessingNodes] = useState<string[]>([]);
+  
   if (pendingApprovals.length === 0) return null;
+  
+  const handleApprove = async (nodeId: string, approved: boolean) => {
+    setProcessingNodes(prev => [...prev, nodeId]);
+    
+    try {
+      await onApprove(nodeId, approved);
+    } finally {
+      setProcessingNodes(prev => prev.filter(id => id !== nodeId));
+    }
+  };
   
   return (
     <Panel position="bottom-center">
@@ -26,6 +40,8 @@ export function ApprovalPanel({ pendingApprovals, nodes, onApprove }: ApprovalPa
               ? node.data.description 
               : reactNodeToString(node.data?.description || '');
             
+            const isProcessing = processingNodes.includes(nodeId);
+            
             return (
               <div key={nodeId} className="flex items-center justify-between gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md">
                 <div>
@@ -37,17 +53,19 @@ export function ApprovalPanel({ pendingApprovals, nodes, onApprove }: ApprovalPa
                     size="sm" 
                     variant="outline"
                     className="h-8 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                    onClick={() => onApprove(nodeId, true)}
+                    onClick={() => handleApprove(nodeId, true)}
+                    disabled={isProcessing}
                   >
-                    Approve
+                    {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : "Approve"}
                   </Button>
                   <Button 
                     size="sm" 
                     variant="outline"
                     className="h-8 bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
-                    onClick={() => onApprove(nodeId, false)}
+                    onClick={() => handleApprove(nodeId, false)}
+                    disabled={isProcessing}
                   >
-                    Reject
+                    {isProcessing ? <Loader2 className="h-3 w-3 animate-spin" /> : "Reject"}
                   </Button>
                 </div>
               </div>
