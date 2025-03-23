@@ -1,6 +1,4 @@
-
 import React from "react";
-import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { CreateAgentDialog } from "@/components/CreateAgentDialog";
 import CreateCrewDialog from "@/components/CreateCrewDialog";
@@ -18,8 +16,7 @@ export default function Index() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
+    <div className="flex flex-col">
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32 bg-muted dark:bg-muted/50">
           <div className="container px-4 md:px-6">

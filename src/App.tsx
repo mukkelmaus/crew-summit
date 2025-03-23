@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
+import Header from "@/components/Header";
 import Index from "@/pages/Index";
 import Agents from "@/pages/Agents";
 import Crews from "@/pages/Crews";
@@ -40,6 +41,16 @@ const queryClient = new QueryClient({
   },
 });
 
+// Layout component that includes the Header for all routes
+const AppLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="flex flex-col min-h-screen">
+    <Header />
+    <main className="flex-1">
+      {children}
+    </main>
+  </div>
+);
+
 function App() {
   return (
     <ErrorBoundary>
@@ -48,13 +59,13 @@ function App() {
           <ApiErrorBoundary>
             <Router>
               <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/agents" element={<Agents />} />
-                <Route path="/crews" element={<Crews />} />
-                <Route path="/crew/:id" element={<CrewDetail />} />
-                <Route path="/flows" element={<Flows />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="*" element={<NotFound />} />
+                <Route path="/" element={<AppLayout><Index /></AppLayout>} />
+                <Route path="/agents" element={<AppLayout><Agents /></AppLayout>} />
+                <Route path="/crews" element={<AppLayout><Crews /></AppLayout>} />
+                <Route path="/crew/:id" element={<AppLayout><CrewDetail /></AppLayout>} />
+                <Route path="/flows" element={<AppLayout><Flows /></AppLayout>} />
+                <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
+                <Route path="*" element={<AppLayout><NotFound /></AppLayout>} />
               </Routes>
             </Router>
           </ApiErrorBoundary>
