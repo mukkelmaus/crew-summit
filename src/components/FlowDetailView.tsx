@@ -4,7 +4,8 @@ import { Flow } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import FlowEditor from "./FlowEditor";
+import { flow } from "@/components/flow/FlowEditor";
+import FlowEditor from "@/components/flow/FlowEditor";
 import FlowControls from "./FlowControls";
 import FlowEventTriggers from "./FlowEventTriggers";
 import FlowLogger from "./FlowLogger";
@@ -21,6 +22,8 @@ interface FlowDetailViewProps {
 export default function FlowDetailView({ flow, onFlowUpdate, onBack }: FlowDetailViewProps) {
   const [currentFlow, setCurrentFlow] = useState<Flow>(flow);
   const [editMode, setEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { toast } = useToast();
   
   const handleFlowStatusChange = (updatedFlow: Flow) => {
@@ -31,6 +34,9 @@ export default function FlowDetailView({ flow, onFlowUpdate, onBack }: FlowDetai
   };
   
   const handleSave = async (updatedFlow: Flow) => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
       await saveFlow(updatedFlow);
       setCurrentFlow(updatedFlow);
@@ -44,11 +50,15 @@ export default function FlowDetailView({ flow, onFlowUpdate, onBack }: FlowDetai
       });
     } catch (error) {
       console.error("Error saving flow:", error);
+      setError(error instanceof Error ? error : new Error("Unknown error occurred"));
+      
       toast({
         title: "Error saving flow",
         description: "Could not save flow changes",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
   
@@ -109,6 +119,8 @@ export default function FlowDetailView({ flow, onFlowUpdate, onBack }: FlowDetai
             readOnly={!editMode}
             onSave={handleSave}
             onRun={handleRun}
+            isLoading={isLoading}
+            error={error}
           />
         </TabsContent>
         

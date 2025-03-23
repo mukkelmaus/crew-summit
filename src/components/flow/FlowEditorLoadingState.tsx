@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { LoadingIndicator } from '@/components/ui/loading-indicator';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface FlowEditorLoadingStateProps {
   isLoading: boolean;
@@ -12,7 +12,10 @@ export function FlowEditorLoadingState({ isLoading, error }: FlowEditorLoadingSt
   if (isLoading) {
     return (
       <div className="border rounded-md p-8 h-[500px] flex items-center justify-center">
-        <LoadingIndicator size="lg" text="Loading flow..." />
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading flow editor...</p>
+        </div>
       </div>
     );
   }
@@ -20,10 +23,19 @@ export function FlowEditorLoadingState({ isLoading, error }: FlowEditorLoadingSt
   if (error) {
     return (
       <div className="border rounded-md p-8 h-[500px] flex items-center justify-center">
-        <Alert variant="destructive" className="max-w-md">
-          <AlertTitle>Error loading flow</AlertTitle>
-          <AlertDescription>{error.message || "An unexpected error occurred"}</AlertDescription>
-        </Alert>
+        <EmptyState
+          icon={<AlertTriangle className="h-16 w-16 text-destructive opacity-20" />}
+          title="Error loading flow"
+          description={error.message || "Could not load the flow editor. Please try again."}
+          action={
+            <button 
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm"
+              onClick={() => window.location.reload()}
+            >
+              Reload
+            </button>
+          }
+        />
       </div>
     );
   }

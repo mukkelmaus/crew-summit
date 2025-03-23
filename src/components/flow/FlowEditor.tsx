@@ -81,7 +81,7 @@ export default function FlowEditor({
   }
 
   return (
-    <div className={`border rounded-md ${isFullscreen ? 'h-screen' : 'h-[500px]'} relative`} ref={reactFlowWrapper}>
+    <div className={`border rounded-md ${isFullscreen ? 'h-screen fixed inset-0 z-50' : 'h-[500px]'} relative`} ref={reactFlowWrapper}>
       <FlowEditorOverlay isSaving={isSaving} isRunning={isRunning} />
       
       <ReactFlow
