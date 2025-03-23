@@ -1,10 +1,8 @@
-
 import { useState } from "react";
 import { Flow } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { flow } from "@/components/flow/FlowEditor";
 import FlowEditor from "@/components/flow/FlowEditor";
 import FlowControls from "./FlowControls";
 import FlowEventTriggers from "./FlowEventTriggers";
