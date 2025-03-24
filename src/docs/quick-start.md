@@ -1,4 +1,3 @@
-
 # CrewSUMMIT Quick Start Guide
 
 This guide will help you get CrewSUMMIT up and running in the fastest way possible.
@@ -28,6 +27,63 @@ npm run dev
 
 Your CrewSUMMIT instance will be running at http://localhost:5173
 
+## Docker Setup (Alternative)
+
+If you prefer using Docker, you can get CrewSUMMIT running with these simple steps:
+
+### Prerequisites
+- Docker and Docker Compose installed on your system
+
+### Steps
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/crewsummit.git
+   cd crewsummit
+   ```
+
+2. Create a `docker-compose.yml` file in the project root:
+   ```yaml
+   version: '3'
+   
+   services:
+     app:
+       build:
+         context: .
+         dockerfile: Dockerfile
+       ports:
+         - "5173:5173"
+       volumes:
+         - .:/app
+         - /app/node_modules
+       environment:
+         - VITE_OPENAI_API_KEY=your_openai_api_key
+   ```
+
+3. Create a `Dockerfile` in the project root:
+   ```dockerfile
+   FROM node:18-alpine
+   
+   WORKDIR /app
+   
+   COPY package*.json ./
+   
+   RUN npm install
+   
+   COPY . .
+   
+   EXPOSE 5173
+   
+   CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+   ```
+
+4. Start the application with Docker Compose:
+   ```bash
+   docker-compose up
+   ```
+
+5. Access CrewSUMMIT at http://localhost:5173
+
 ## Essential Configuration
 
 Create a `.env` file in the project root with these minimum required settings:
@@ -35,6 +91,8 @@ Create a `.env` file in the project root with these minimum required settings:
 ```
 VITE_OPENAI_API_KEY=your_openai_api_key
 ```
+
+If using Docker, you can set this directly in the docker-compose.yml file as shown above.
 
 ## First Steps (2-Minute Tour)
 
