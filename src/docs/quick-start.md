@@ -26,7 +26,7 @@ npm install
 npm run dev
 ```
 
-Your CrewSUMMIT instance will be running at http://localhost:8080
+Your CrewSUMMIT instance will be running at http://localhost:4285
 
 ## Docker Setup (Alternative)
 
@@ -53,7 +53,7 @@ If you prefer using Docker, you can get CrewSUMMIT running with these simple ste
          context: .
          dockerfile: Dockerfile
        ports:
-         - "8080:8080"
+         - "4285:4285"
        volumes:
          - .:/app
          - /app/node_modules
@@ -73,7 +73,7 @@ If you prefer using Docker, you can get CrewSUMMIT running with these simple ste
    
    COPY . .
    
-   EXPOSE 8080
+   EXPOSE 4285
    
    CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
    ```
@@ -83,7 +83,7 @@ If you prefer using Docker, you can get CrewSUMMIT running with these simple ste
    docker-compose up
    ```
 
-5. Access CrewSUMMIT at http://localhost:8080
+5. Access CrewSUMMIT at http://localhost:4285
 
 ## Essential Configuration
 

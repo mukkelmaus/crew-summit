@@ -58,7 +58,7 @@ For the fastest way to get up and running, see our [Quick Start Guide](./src/doc
    npm run dev
    ```
 
-4. Open your browser and navigate to `http://localhost:5173`
+4. Open your browser and navigate to `http://localhost:4285`
 
 ## Configuration
 
@@ -69,7 +69,7 @@ Create a `.env` file in the project root with the following variables:
 ```
 # App Configuration
 VITE_APP_NAME=CrewSUMMIT
-VITE_APP_URL=http://localhost:5173
+VITE_APP_URL=http://localhost:4285
 
 # LLM API Configurations
 VITE_OPENAI_API_KEY=your_openai_api_key

@@ -29,7 +29,7 @@ This guide will help you set up and start using CrewSUMMIT for managing AI agent
    - Add the following variables:
      ```
      VITE_APP_NAME=CrewSUMMIT
-     VITE_APP_URL=http://localhost:5173
+     VITE_APP_URL=http://localhost:4285
      VITE_OPENAI_API_KEY=your_openai_api_key
      VITE_ANTHROPIC_API_KEY=your_anthropic_api_key
      VITE_STORAGE_TYPE=local
@@ -40,7 +40,7 @@ This guide will help you set up and start using CrewSUMMIT for managing AI agent
    npm run dev
    ```
 
-5. Access the application at `http://localhost:5173`
+5. Access the application at `http://localhost:4285`
 
 ## Quick Start Guide
 
