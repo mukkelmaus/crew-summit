@@ -45,6 +45,7 @@ export function useFlowHistory(initialNodes: Node[], initialEdges: Edge[]) {
     saveToHistory,
     undoAction,
     redoAction,
-    setHistoryIndex
+    setHistoryIndex,
+    setHistory // Expose setHistory to allow modification from outside
   };
 }

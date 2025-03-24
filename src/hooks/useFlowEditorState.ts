@@ -8,10 +8,12 @@ import { useNodeOperations } from './flow/useNodeOperations';
 import { useFlowOperations } from './flow/useFlowOperations';
 import { useKeyboardShortcuts } from './flow/useKeyboardShortcuts';
 import { organizeNodesLayout } from '@/lib/flowEditorUtils';
+import { useToast } from '@/hooks/use-toast';
 
 export function useFlowEditorState(flow: Flow, onSave?: (flow: Flow) => void, onRun?: (flow: Flow) => void, readOnly = false) {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
+  const { toast } = useToast();
   
   // Initialize pending approvals state
   const [pendingApprovals, setPendingApprovals] = useState<string[]>(
@@ -100,11 +102,11 @@ export function useFlowEditorState(flow: Flow, onSave?: (flow: Flow) => void, on
     
     reactFlowInstance.fitView({ padding: 0.2 });
     
-    nodesAndEdgesHook.toast({
+    toast({
       title: "Layout organized",
       description: "Nodes have been arranged in a structured layout."
     });
-  }, [nodes, setNodes, reactFlowInstance, nodesAndEdgesHook]);
+  }, [nodes, setNodes, reactFlowInstance, toast]);
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts(
