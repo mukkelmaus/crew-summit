@@ -9,6 +9,10 @@ A comprehensive system for unified management, monitoring, integration & tasks f
 
 CrewSUMMIT is a modern web application designed for creating, managing, and monitoring AI agent crews. It provides a robust platform for AI orchestration, enabling users to define agents with specific roles, assemble them into collaborative crews, assign tasks, and monitor their real-time execution.
 
+## Quick Start
+
+For the fastest way to get up and running, see our [Quick Start Guide](./src/docs/quick-start.md).
+
 ## Features
 
 - **Agent Management**: Create and configure AI agents with customizable roles and capabilities
@@ -127,6 +131,7 @@ npm run test:coverage
 
 For comprehensive documentation, please refer to the `/docs` directory:
 
+- [Quick Start Guide](./src/docs/quick-start.md)
 - [Getting Started](./src/docs/getting-started.md)
 - [User Guide](./src/docs/user-guide.md)
 - [Developer Guide](./src/docs/developer-guide.md)
